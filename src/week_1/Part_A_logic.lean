@@ -459,36 +459,68 @@ variable (S : Prop)
 -- You will need to use the `left` tactic for this one.
 theorem or.intro_left : P → P ∨ Q :=
 begin
-  sorry
+  intro p,
+  left,
+  exact p,
 end
 
 theorem or.intro_right : Q → P ∨ Q :=
 begin
-  sorry,
+  intro p,
+  right,
+  exact p,
 end
 
 /-- the eliminator for `∨`. -/
 theorem or.elim : P ∨ Q → (P → R) → (Q → R) → R :=
 begin
-  sorry
+  intros pq rp rq,
+  cases pq with p q,
+  {
+    apply rp p
+  },
+  {
+    apply rq q
+  }
 end
 
 /-- `∨` is symmetric -/
 theorem or.symm : P ∨ Q → Q ∨ P :=
 begin
-  sorry
+  intro pq,
+  apply (or.elim P Q (Q ∨ P)) pq (or.intro_right Q P) (or.intro_left Q P),
 end
 
 /-- `∨` is commutative -/
 theorem or.comm : P ∨ Q ↔ Q ∨ P :=
 begin
-  sorry,
+  split,
+  exact or.symm P Q,
+  exact or.symm Q P,
 end
 
 /-- `∨` is associative -/
 theorem or.assoc : (P ∨ Q) ∨ R ↔ P ∨ Q ∨ R :=
 begin
-  sorry,
+  split,
+  intro h,
+  cases h with pq r,
+  {
+    cases pq with p q,
+    {exact or.intro_left _ _ p},
+    {exact or.intro_right P _ (or.intro_left _ _ q)}
+  },
+  {
+    exact or.intro_right _ _ (or.intro_right _ _ r)
+  },
+  intro h,
+  cases h with p qr,
+  {exact or.intro_left _ _ (or.intro_left _ _ p)},
+  {
+    cases qr with q r,
+    {exact or.intro_left _ _ (or.intro_right _ _ q)},
+    {exact or.intro_right _ _ r}
+  },
 end
 
 /-!
