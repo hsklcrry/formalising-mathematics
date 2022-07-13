@@ -520,7 +520,7 @@ begin
     cases qr with q r,
     {exact or.intro_left _ _ (or.intro_right _ _ q)},
     {exact or.intro_right _ _ r}
-  },
+  }
 end
 
 /-!
@@ -529,34 +529,51 @@ end
 
 theorem or.imp : (P → R) → (Q → S) → P ∨ Q → R ∨ S :=
 begin
-  sorry,
+  intros pr qs pq,
+  cases pq with p q,
+  {exact or.intro_left _ _ (pr p)},
+  {exact or.intro_right _ _ (qs q)}
 end
 
 theorem or.imp_left : (P → Q) → P ∨ R → Q ∨ R :=
 begin
-  sorry,
+  intros pq pr,
+  cases pr with p r,
+  {exact or.intro_left _ _ (pq p)},
+  {exact or.intro_right _ _ r}
 end
 
 theorem or.imp_right : (P → Q) → R ∨ P → R ∨ Q :=
 begin
-  sorry,
+  intros pq rp,
+  cases rp with r p,
+  {exact or.intro_left _ _ r},
+  {exact or.intro_right _ _ (pq p)}
 end
 
 theorem or.left_comm : P ∨ Q ∨ R ↔ Q ∨ P ∨ R :=
 begin
   -- Try rewriting `or.comm` and `or.assoc` to do this one quickly.
-  sorry,
+  rw or.comm,
+  rw or.comm P R,
+  rw or.assoc
 end
 
 /-- the recursor for `∨` -/
 theorem or.rec : (P → R) → (Q → R) → P ∨ Q → R :=
 begin
-  sorry,
+  intros pr qr pq,
+  cases pq with p q,
+  {exact pr p},
+  {exact qr q}
 end
 
 theorem or_congr : (P ↔ R) → (Q ↔ S) → (P ∨ Q ↔ R ∨ S) :=
 begin
-  sorry,
+  intros pr qs,
+  split,
+  {exact or.imp _  _ _ _ pr.1 qs.1},
+  {exact or.imp _  _ _ _ pr.2 qs.2},
 end
 
 /-!
@@ -582,29 +599,51 @@ Hint: how many cases are there?
 /-- eliminator for `false` -/
 theorem false.elim : false → P :=
 begin
-  sorry,
+  intro h,
+  cases h,
 end
 
 theorem and_true_iff : P ∧ true ↔ P :=
 begin
-  sorry,
+  split,
+  {intro pt,
+  exact pt.1},
+  {intro hp,
+  exact and.intro _ _ hp trivial}, 
 end
 
 theorem or_false_iff : P ∨ false ↔ P :=
 begin
-  sorry,
+  split,
+  {
+    intro pf, 
+    cases pf with p f,
+    exact p,
+    cases f,
+  },
+  {
+    intro p,
+    exact or.intro_left _ _ p
+  }
 end
 
 -- false.elim is handy for this one
 theorem or.resolve_left : P ∨ Q → ¬P → Q :=
 begin
-  sorry,
+  intros pq np,
+  cases pq with p q,
+  {exact false.elim _ (np p)},
+  {exact q}
 end
 
 -- this one you can't do constructively
 theorem or_iff_not_imp_left : P ∨ Q ↔ ¬P → Q :=
 begin
-  sorry,
+  split,
+  exact or.resolve_left _ _,
+  intro h,
+  have c : P ∨ ¬ P, by tauto, --classical
+  exact or.imp_right _ _ _ h c,
 end
 
 end xena
