@@ -88,7 +88,9 @@ theorem mem_of_mem (hX : X ∈ P.C) (hY : Y ∈ P.C) {a b : α}
 begin
   -- you might want to start with `have hXY : X = Y`
   -- and prove it from the previous lemma
-  sorry,
+  have hXY : X = Y, from eq_of_mem hX hY haX haY,
+  rw <-hXY,
+  assumption
 end
 
 /-- Every term of type `α` is in one of the blocks for a partition `P`. -/
@@ -96,7 +98,11 @@ theorem mem_block (a : α) : ∃ X : set α, X ∈ P.C ∧ a ∈ X :=
 begin
   -- an interesting way to start is
   -- `obtain ⟨X, hX, haX⟩ := P.Hcover a,`
-  sorry,
+  obtain ⟨X, hX, haX⟩ := P.Hcover a,
+  use X,
+  split,
+  assumption,
+  assumption,
 end
 
 end partition
@@ -152,7 +158,8 @@ begin
   -- You can extract the things with
   -- `rcases hR with ⟨hrefl, hsymm, htrans⟩,` or
   -- `obtain ⟨hrefl, hsymm, htrans⟩ := hR,`
-  sorry,
+  obtain ⟨hrefl, hsymm, htrans⟩ := hR,
+  apply hrefl,
 end
 
 lemma cl_sub_cl_of_mem_cl {a b : α} :
@@ -160,7 +167,14 @@ lemma cl_sub_cl_of_mem_cl {a b : α} :
   cl R a ⊆ cl R b :=
 begin
   -- remember `set.subset_def` says `X ⊆ Y ↔ ∀ a, a ∈ X → a ∈ Y
-  sorry,
+  intro ha,
+  obtain ⟨hrefl, hsymm, htrans⟩ := hR,
+  rw mem_cl_iff at *,
+  intro x,
+  intro hx,
+  rw mem_cl_iff at *,
+  apply htrans hx,
+  assumption,
 end
 
 lemma cl_eq_cl_of_mem_cl {a b : α} :
@@ -168,7 +182,18 @@ lemma cl_eq_cl_of_mem_cl {a b : α} :
   cl R a = cl R b :=
 begin
   -- remember `set.subset.antisymm` says `X ⊆ Y → Y ⊆ X → X = Y`
-  sorry
+  intro h,
+  apply set.subset.antisymm,
+  {
+    apply cl_sub_cl_of_mem_cl hR,
+    assumption
+  },
+  {
+    apply cl_sub_cl_of_mem_cl hR,
+    obtain ⟨hrefl, hsymm, htrans⟩ := hR,
+    apply hsymm,
+    assumption
+  }
 end
 
 end equivalence_classes -- section
@@ -205,20 +230,42 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
       cases R with R hR,
       -- If X is an equivalence class then X is nonempty.
       show ∀ (X : set α), (∃ (a : α), X = cl R a) → X.nonempty,
-      sorry,
+      intro X,
+      intro h,
+      cases h with a hXcl,
+      use a,
+      rw hXcl,
+      apply mem_cl_self,
+      assumption,
     end,
     Hcover := begin
       cases R with R hR,
       -- The equivalence classes cover α
       show ∀ (a : α), ∃ (X : set α) (H : ∃ (b : α), X = cl R b), a ∈ X,
-      sorry,
+      intro a,
+      use cl R a,
+      split,
+      use a,
+      apply mem_cl_self,
+      assumption
     end,
     Hdisjoint := begin
       cases R with R hR,
       -- If two equivalence classes overlap, they are equal.
       show ∀ (X Y : set α), (∃ (a : α), X = cl R a) →
         (∃ (b : α), Y = cl _ b) → (X ∩ Y).nonempty → X = Y,
-      sorry,
+      intros X Y hXcl hYcl hXY,
+      cases hXY with a haXY,
+      cases hXcl with x,
+      cases hYcl with y,
+      rw [hXcl_h, hYcl_h] at *,
+      apply cl_eq_cl_of_mem_cl hR,
+      obtain ⟨h₁,h₂⟩ := haXY,
+      obtain ⟨hrefl, hsymm, htrans⟩ := hR,
+      rw mem_cl_iff at *,
+      have hxa : R x a, apply hsymm, assumption,
+      apply htrans hxa ,
+      exact h₂,
     end },
   -- Conversely, say P is an partition. 
   inv_fun := λ P, 
