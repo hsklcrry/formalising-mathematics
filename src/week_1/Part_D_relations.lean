@@ -279,14 +279,24 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
     { -- It's reflexive
       show ∀ (a : α)
         (X : set α), X ∈ P.C → a ∈ X → a ∈ X,
-      sorry,
+      intro a,
+      intro X,
+      intros _ h,
+      exact h
     },
     split,
     { -- it's symmetric
       show ∀ (a b : α),
         (∀ (X : set α), X ∈ P.C → a ∈ X → b ∈ X) →
          ∀ (X : set α), X ∈ P.C → b ∈ X → a ∈ X,
-      sorry,
+      intros a b h X hXp,
+      obtain ab := h X hXp,
+      intro hbX,
+      obtain ⟨Y, hYp,haY⟩ := P.3 a,
+      obtain hbY := h Y hYp haY,
+      obtain h₁ := eq_of_mem hXp hYp hbX hbY,
+      rw h₁,
+      assumption,
     },
     { -- it's transitive
       unfold transitive,
@@ -294,7 +304,12 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
         (∀ (X : set α), X ∈ P.C → a ∈ X → b ∈ X) →
         (∀ (X : set α), X ∈ P.C → b ∈ X → c ∈ X) →
          ∀ (X : set α), X ∈ P.C → a ∈ X → c ∈ X,
-      sorry,
+      intros a b c, 
+      intros hab hbc,
+      intros X hXp haX,
+      apply hbc X hXp,
+      apply hab X hXp,
+      assumption,
     }
   end⟩,
   -- If you start with the equivalence relation, and then make the partition
@@ -308,7 +323,23 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
     ext a b,
     -- so you have to prove an if and only if.
     show (∀ (c : α), a ∈ cl R c → b ∈ cl R c) ↔ R a b,
-    sorry,
+    split,
+    {
+      intro h,
+      obtain h₁ := h a (mem_cl_self hR _),
+      obtain ⟨hrefl, hsymm, htrans⟩ := hR,
+      apply hsymm,
+      rw <- mem_cl_iff R,
+      assumption
+    },
+    {
+      intros hab c haclc,
+      obtain ⟨hrefl, hsymm, htrans⟩ := hR,
+      rw mem_cl_iff at *,
+      obtain hba := hsymm hab, 
+      obtain := htrans hba haclc,
+      assumption,
+    }
   end,
   -- Similarly, if you start with the partition, and then make the
   -- equivalence relation, and then construct the corresponding partition 
@@ -321,5 +352,29 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
     ext X,
     show (∃ (a : α), X = cl _ a) ↔ X ∈ P.C,
     dsimp only,
+    split,
+    {
+      intro h,
+      cases h with a h₁,
+      --rw h₁,
+      obtain ⟨Y, ⟨hYp,haY⟩⟩ := mem_block a,
+      swap, exact P,
+      unfold cl at h₁,
+      rw h₁,
+      convert hYp,
+      ext x,
+      split,
+      {
+        intro h,
+        have H : ∀ (X : set α), X ∈ P.C → x ∈ X → a ∈ X, from h,
+        have : ∀ (X ∈ P.C), x ∈ X → a ∈ X, from H,
+        
+        have H₁ : x ∈ Y → a ∈ Y, from H Y hYp,
+        sorry
+      },
+      {
+        sorry
+      }
+    },
     sorry,
   end }
