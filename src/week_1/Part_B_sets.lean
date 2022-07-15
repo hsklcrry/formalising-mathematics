@@ -228,7 +228,7 @@ begin
     intro h,
     intro b,
     by_contra hb,
-    have n : ∃ (a : Ω), a ∈ X, existsi b, exact hb,
+    have : ∃ (a : Ω), a ∈ X, existsi b, exact hb,
     contradiction,
   },
   {
@@ -242,7 +242,23 @@ end
 
 example : ¬ (∀ a, a ∈ X) ↔ ∃ b, ¬ (b ∈ X) :=
 begin
-  sorry,
+  split,
+  {
+    intro h,
+    by_contra h₂,
+    apply h,
+    intro a,
+    by_contra hanX,
+    apply h₂,
+    use a,
+  },
+  {
+    intro h,
+    by_contra h₂,
+    cases h with x hnX,
+    apply hnX,
+    exact h₂ x
+  }
 end
 
 end xena
