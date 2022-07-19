@@ -356,25 +356,98 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
     {
       intro h,
       cases h with a h₁,
-      --rw h₁,
+
       obtain ⟨Y, ⟨hYp,haY⟩⟩ := mem_block a,
       swap, exact P,
+      
       unfold cl at h₁,
       rw h₁,
       convert hYp,
       ext x,
+
+      obtain ⟨Px, ⟨hPxp,hxPx⟩⟩ := mem_block x,
+      swap, exact P,
+
       split,
       {
         intro h,
-        have H : ∀ (X : set α), X ∈ P.C → x ∈ X → a ∈ X, from h,
-        have : ∀ (X ∈ P.C), x ∈ X → a ∈ X, from H,
-        
-        have H₁ : x ∈ Y → a ∈ Y, from H Y hYp,
-        sorry
+        haveI H₂ : ∀ (X ∈ P.C), x ∈ X → a ∈ X := h,
+        specialize H₂ Px hPxp hxPx,
+        have hNonempty : (Px ∩ Y).nonempty, 
+        {
+          use a,
+          split,
+          assumption,
+          assumption,
+        },
+        have : Px = Y, from P.Hdisjoint Px Y hPxp hYp hNonempty,
+        rw <-this,
+        assumption,
       },
       {
-        sorry
+        intro haY,
+        intros Z hZp hxZ,
+        have hNonempty : (Y ∩ Z).nonempty, 
+        {
+          use x,
+          split,
+          assumption,
+          assumption,
+        },
+        have hYZ : Y = Z,from P.Hdisjoint Y Z hYp hZp hNonempty,
+        rw <-hYZ,
+        assumption,
       }
     },
-    sorry,
-  end }
+    {
+      intro hXp,
+      cases P.Hnonempty X hXp with a haX,
+      use a,
+
+
+      ext x,
+      unfold cl,
+      simp,
+      split,
+      {
+        intro hxX,
+        intros Z hZp hxZ,
+        have hNonempty : (X ∩ Z).nonempty, 
+        {
+          use x,
+          split,
+          assumption,
+          assumption,
+        },
+        have hXZ : X = Z,from P.Hdisjoint X Z hXp hZp hNonempty,
+        rw <- hXZ,
+        assumption,
+      },
+      {
+        intro h,
+        by_contra hxnX,
+
+        obtain ⟨Px, ⟨hPxp,hxPx⟩⟩ := mem_block x,
+        swap, exact P,
+
+        specialize h Px hPxp,
+        have : a ∉ Px,
+        {
+          intro haPx,
+          have hNonempty : (X ∩ Px).nonempty, 
+          {
+            use a,
+            split,
+            assumption,
+            assumption,
+          },
+          have : X = Px, from P.Hdisjoint X Px hXp hPxp hNonempty,
+          rw <- this at hxPx,
+          contradiction,
+        },
+        have, from h hxPx,
+        contradiction,
+      },
+    },
+  end 
+}
