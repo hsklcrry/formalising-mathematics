@@ -326,11 +326,10 @@ example (α : Type) : {R : α → α → Prop // equivalence R} ≃ partition α
     split,
     {
       intro h,
-      obtain h₁ := h a (mem_cl_self hR _),
       obtain ⟨hrefl, hsymm, htrans⟩ := hR,
       apply hsymm,
-      rw <- mem_cl_iff R,
-      assumption
+      apply h,
+      apply hrefl,
     },
     {
       intros hab c haclc,
