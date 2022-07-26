@@ -111,14 +111,14 @@ end
 theorem mul_mem {x y : G} : x ∈ H → y ∈ H → x * y ∈ H :=
 begin
   -- what do you think?
-  sorry
+  apply mul_mem',
 end
 
 /-- A subgroup is closed under inverse -/
 theorem inv_mem {x : G} : x ∈ H → x⁻¹ ∈ H :=
 begin
   -- what do you think?
-  sorry
+  apply inv_mem',
 end
 
 /-
@@ -145,7 +145,17 @@ we can make it a `simp` lemma.
 
 @[simp] theorem inv_mem_iff {x : G} : x⁻¹ ∈ H ↔ x ∈ H := 
 begin
-  sorry,
+  split,
+  {
+    intro h,
+    have : (x⁻¹)⁻¹ ∈ H, from inv_mem H h,
+    simp at this,
+    assumption
+  },
+  {
+    intro h,
+    apply inv_mem H h,
+  }
 end
 
 -- We could prove a bunch more theorems here. Let's just do one more.
