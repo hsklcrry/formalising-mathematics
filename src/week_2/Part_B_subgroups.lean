@@ -163,7 +163,11 @@ end
 
 theorem mem_of_mem_mul_mem {x y : G} (hx : x ∈ H) (hxy : x * y ∈ H) : y ∈ H :=
 begin
-  sorry,
+  have h : y = x⁻¹ * (x * y), by simp,
+  rw h,
+  apply mul_mem H,
+  exact inv_mem H hx,
+  assumption
 end
 
 /-
@@ -191,7 +195,14 @@ end
 theorem ext'_iff {H K : subgroup G} :
   H.carrier = K.carrier ↔ H = K :=
 begin
-  sorry,
+  split,
+  {
+    apply ext'
+  },
+  {
+    intro h,
+    rw h
+  }
 end
 
 -- to do this next one, first apply the `ext'` theorem we just proved,
@@ -200,7 +211,10 @@ end
 /-- Two subgroups are equal if they have the same elements. -/
 @[ext] theorem ext {H K : subgroup G} (h : ∀ x, x ∈ H ↔ x ∈ K) : H = K :=
 begin
-  sorry,
+  apply ext',
+  ext, 
+  specialize h x,
+  assumption
 end
 
 /-
@@ -297,15 +311,32 @@ def inf (H K : subgroup G) : subgroup G :=
   one_mem' := 
   begin
     -- recall that x ∈ Y ∩ Z is _by definition_ x ∈ Y ∧ x ∈ Z, so you can `split` this. 
-    sorry,
+    simp,
+    cases H,
+    cases K,
+    split,
+    assumption,
+    assumption
   end,
   mul_mem' := 
   begin
-    sorry,
+    intros x y,
+    simp,
+    intros xH xK yH yK,
+    split,
+    cases H,
+    apply H_mul_mem',
+    assumption,
+    assumption,
+    cases K,
+    apply K_mul_mem',
+    assumption,
+    assumption,
   end,
   inv_mem' :=
   begin
-    sorry,
+    simp,
+    tauto,
   end }
 
 -- Notation for `inf` in computer science circles is ⊓ .
@@ -372,13 +403,23 @@ containing the set
 def Inf (X : set (subgroup G)) : subgroup G :=
 { carrier := ⋂ K ∈ X, (K : set G), -- carrier is the intersection of the underlying sets
   one_mem' := begin
-    sorry,
+    simp,
+    intros i iX,
+    cases i,
+    assumption,
   end,
   mul_mem' := begin
-    sorry,
+    intros x y,
+    simp,
+    intros hx hy,
+    intros i hi,
+    apply mul_mem,
+    specialize hx i hi, assumption,
+    specialize hy i hi, assumption,
   end,
   inv_mem' := begin
-    sorry,
+    intro x,
+    simp,
   end,
 }
 
@@ -434,32 +475,77 @@ so you can just start this with `intro g`.
 -/
 lemma subset_closure (S : set G) : S ⊆ ↑(closure S) :=
 begin
-  sorry,
+  intro g,
+  intro gS,
+  simp,
+  rw mem_closure_iff,
+  intro H,
+  intro hSH,
+  apply hSH gS,
 end
 
 -- It's useful to know `subset.trans : X ⊆ Y → Y ⊆ Z → X ⊆ Z`
 lemma closure_mono {S T : set G} (hST : S ⊆ T) : closure S ≤ closure T :=
 begin
-  sorry,
+  intro x,
+  simp,
+  rw [mem_closure_iff,mem_closure_iff],
+  intro h,
+  intro H,
+  specialize h H,
+  intro h₁,
+  apply h,
+  apply subset.trans hST h₁,
 end
 
 -- not one of the axioms, but sometimes handy
 lemma closure_le (S : set G) (H : subgroup G) : closure S ≤ H ↔ S ⊆ ↑H :=
 begin
-  sorry,
+  split,
+  {
+    -- let closure S contained in H
+    intro h,
+    -- we know that S ⊆ closure S
+    have h₁ : S ⊆ (closure S), from subset_closure S,
+    -- finish by transitivity
+    apply subset.trans h₁ h,
+  },
+  {
+    -- let S ⊆ H
+    intro h,
+    -- take an x ∈ closure S
+    intros x hxC,
+    simp at hxC,
+    -- use deinition of closure
+    rw mem_closure_iff at hxC,
+    -- for H
+    specialize hxC H h,
+    assumption,
+  }
 end
 
 -- You can start this one by applying `le_antisymm`,
 lemma closure_closure (S : set G) : closure S = closure (closure S) :=
 begin
-  sorry,
+  apply le_antisymm,
+  {apply subset_closure},
+  {rw closure_le, tauto}
 end
 
 -- This shows that every subgroup is the closure of something, namely its
 -- underlying subset. 
 lemma closure_self {H : subgroup G} : closure ↑H = H :=
 begin
-  sorry,
+  apply le_antisymm,
+  {
+    intros x hxC,
+    simp at *,
+    rw mem_closure_iff at hxC,
+    specialize hxC H,
+    apply hxC,
+    refl,
+  },
+  {apply subset_closure}
 end
 
 /-
@@ -501,7 +587,8 @@ begin
   -- Our hypothesis HS is just that S ⊆ ↑H, by definition
   change S ⊆ ↑H at HS, 
   -- I think you can take it from here!
-  sorry,
+  rw closure_le,
+  assumption,
 end
 
 /-
