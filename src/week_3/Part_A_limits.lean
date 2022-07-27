@@ -471,19 +471,46 @@ looking at what happens when we change a sequence or limit by adding a constant.
 lemma is_limit_add_const {a : ℕ → ℝ} {l : ℝ} (c : ℝ) (ha : is_limit a l) :
   is_limit (λ i, a i + c) (l + c) :=
 begin
-  sorry
+  intros ε hε,
+  specialize ha ε hε,
+  rcases ha with ⟨N,h₂⟩,
+  use N,
+  intros n hn,
+  specialize h₂ n hn,
+  dsimp only,
+  ring,
+  assumption
 end
 
 lemma is_limit_add_const_iff {a : ℕ → ℝ} {l : ℝ} (c : ℝ) :
   is_limit a l ↔ is_limit (λ i, a i + c) (l + c) :=
 begin
-  sorry,
+  split,
+  {
+    apply is_limit_add_const
+  },
+  {
+    intro h,
+    convert is_limit_add_const (-c) h,
+    {
+      ext,
+      ring,
+    },
+    {
+      ring
+    }
+  }
 end
 
 lemma is_limit_iff_is_limit_sub_eq_zero (a : ℕ → ℝ) (l : ℝ) :
   is_limit a l ↔ is_limit (λ i, a i - l) 0 :=
 begin
-  sorry,
+  convert is_limit_add_const_iff (-l),
+  {
+    ext,
+    ring
+  },
+  ring,
 end
 
 /-
@@ -505,7 +532,37 @@ theorem is_limit_add {a b : ℕ → ℝ} {l m : ℝ}
   (h1 : is_limit a l) (h2 : is_limit b m) :
   is_limit (a + b) (l + m) :=
 begin
-  sorry,
+  -- let ε > 0
+  intros ε hε,
+
+  -- take N₁ from a and (ε / 2)
+  cases h1 (ε / 2) (by linarith) with N₁ hN₁, 
+  -- take N₂ from b and (ε / 2)
+  cases h2 (ε / 2) (by linarith) with N₂ hN₂,
+
+  set N := max N₁ N₂ with hN,
+  use N,
+
+  -- take n > N
+  intros n hn,
+
+  have h1N : N₁ ≤ N := le_max_left N₁ N₂,
+  have h2N : N₂ ≤ N := le_max_right N₁ N₂,
+
+  specialize hN₁ n (by linarith),
+  specialize hN₂ n (by linarith),
+
+  rw abs_lt at *,
+  cases hN₁,
+  cases hN₂,
+
+  rw pi.add_apply at *,
+
+  split,
+  {
+    linarith,
+  },
+  linarith,
 end
 
 -- We have proved `is_limit` behaves well under `+`. If we also
@@ -528,6 +585,7 @@ end
 lemma is_limit_mul_const_left {a : ℕ → ℝ} {l c : ℝ} (h : is_limit a l) :
   is_limit (λ n, c * (a n)) (c * l) :=
 begin
+  
   sorry,
 end
 
