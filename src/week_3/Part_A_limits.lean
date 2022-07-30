@@ -585,8 +585,32 @@ end
 lemma is_limit_mul_const_left {a : ℕ → ℝ} {l c : ℝ} (h : is_limit a l) :
   is_limit (λ n, c * (a n)) (c * l) :=
 begin
-  
-  sorry,
+  intros ε he,
+  dsimp only,
+  by_cases hc : c = 0,
+  {
+    rw hc at *,
+    simp,
+    use 1,
+    intros n h,
+    linarith,
+  },
+  {
+    rw is_limit at h,
+    have cpos : |c| > 0, by exact abs_pos.mpr hc,
+    cases h (ε / |c|) (by {exact div_pos he cpos}) with N₁ hN₁,
+    use N₁,
+    intros n hn,
+    specialize hN₁ n (by linarith),
+
+    have : |c * a n - c * l| = |c| * | a n - l| ,
+    {
+      rw <- (mul_sub c (a n) l),
+      exact abs_mul c (a n - l),
+    },
+    rw this,
+    exact (lt_div_iff' cpos).mp hN₁,
+  },
 end
 
 -- This should just be a couple of lines now.
@@ -594,7 +618,9 @@ lemma is_limit_linear (a : ℕ → ℝ) (b : ℕ → ℝ) (α β c d : ℝ)
     (ha : is_limit a α) (hb : is_limit b β) : 
     is_limit ( λ n, c * (a n) + d * (b n) ) (c * α + d * β) :=
 begin
-  sorry,
+  apply is_limit_add,
+  apply is_limit_mul_const_left, assumption,
+  apply is_limit_mul_const_left, assumption,
 end
 
 
@@ -606,7 +632,26 @@ end
 lemma is_limit_mul_eq_zero_of_is_limit_eq_zero {a : ℕ → ℝ} {b : ℕ → ℝ}
   (ha : is_limit a 0) (hb : is_limit b 0) : is_limit (a * b) 0 :=
 begin
-  sorry,
+  intros ε pos,
+  cases ha ε pos with N hN,
+  cases hb 1 (by linarith) with M hM,
+
+  use max N M,
+
+  intro n,
+  intro hn,
+
+  specialize hN n (by {obtain := le_max_left N M, linarith}),
+  specialize hM n (by {obtain := le_max_right N M, linarith}),
+
+  simp at *,
+  rw abs_mul,
+  rw (by simp : ε = ε * 1),
+  apply mul_lt_mul',
+  linarith,
+  linarith,
+  apply abs_nonneg,
+  assumption
 end
 
 -- The limit of the product is the product of the limits.
@@ -619,7 +664,30 @@ theorem is_limit_mul (a : ℕ → ℝ) (b : ℕ → ℝ) (l m : ℝ)
   (h1 : is_limit a l) (h2 : is_limit b m) :
   is_limit (a * b) (l * m) :=
 begin
-  sorry,
+  suffices : is_limit (λ i, (a i - l) * (b i - m) + (l * (b i - m)) + m * (a i - l)) 0,
+  {ring at this,
+  rwa is_limit_iff_is_limit_sub_eq_zero,
+  dsimp,
+  ring, assumption},
+  {
+    obtain hb0 : is_limit (λ i, b i - m) 0 := by {rwa <- is_limit_iff_is_limit_sub_eq_zero},
+    obtain ha0 : is_limit (λ i, a i - l) 0 := by {rwa <- is_limit_iff_is_limit_sub_eq_zero},
+    obtain hlb : is_limit (λ n, l * (b n - m)) (l*0) := is_limit_mul_const_left hb0,
+    obtain hma : is_limit (λ n, m * (a n - l)) (m*0) := is_limit_mul_const_left ha0,
+    obtain hab : is_limit (λ i, (a i - l) * (b i - m)) 0 := 
+      is_limit_mul_eq_zero_of_is_limit_eq_zero ha0 hb0,
+    obtain hs : is_limit (λ n, l * (b n - m) + m * (a n - l)) 0 := 
+      begin 
+        --ring at hlb hma, 
+        obtain h := is_limit_add hlb hma,
+        convert h,
+        ring,
+      end,
+    obtain hr := is_limit_add hab hs,
+    convert hr,
+    {ext n, simp, ring},
+    ring,
+  }
 end
 
 
