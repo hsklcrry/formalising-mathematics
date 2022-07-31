@@ -678,7 +678,6 @@ begin
       is_limit_mul_eq_zero_of_is_limit_eq_zero ha0 hb0,
     obtain hs : is_limit (λ n, l * (b n - m) + m * (a n - l)) 0 := 
       begin 
-        --ring at hlb hma, 
         obtain h := is_limit_add hlb hma,
         convert h,
         ring,
@@ -696,7 +695,34 @@ theorem is_limit_le_of_le (a : ℕ → ℝ) (b : ℕ → ℝ)
   (l : ℝ) (m : ℝ) (hl : is_limit a l) (hm : is_limit b m) 
   (hle : ∀ n, a n ≤ b n) : l ≤ m :=
 begin
-  sorry,
+  by_contra,
+  have h1 : l > m, by linarith,
+  set ε := (l - m) / 2 with heps,
+  have : ε > 0, by linarith,
+  cases hl ε this with N1 h2,
+  cases hm ε this with N2 h3,
+  set N := max N1 N2 with hN,
+  have hN1 : N ≥ N1, by 
+  {
+    rw hN, 
+    calc max N1 N2 ≥ N1 : le_max_left N1 N2,    
+  },
+  have hN2 : N ≥ N2, by 
+  {
+    rw hN, 
+    calc max N1 N2 ≥ N2 : le_max_right N1 N2,    
+  },
+  specialize h2 N hN1,
+  specialize h3 N hN2,
+  rw heps at *,
+  rw abs_lt at *,
+  cases h2,
+  cases h3,
+  have : a N > b N,
+  calc a N > (l+m)/2 : by linarith
+    ... > b N : by linarith,
+  specialize hle N,
+  linarith,
 end
 
 -- sandwich
@@ -704,7 +730,29 @@ theorem sandwich (a b c : ℕ → ℝ)
   (l : ℝ) (ha : is_limit a l) (hc : is_limit c l) 
   (hab : ∀ n, a n ≤ b n) (hbc : ∀ n, b n ≤ c n) : is_limit b l :=
 begin
-  sorry,
+  intros ε heps,
+  cases ha ε heps with N1 h1,
+  cases hc ε heps with N2 h2,
+  set N := max N1 N2 with hN,
+  use N,
+  intros n hn,
+  specialize hab n,
+  specialize hbc n,
+
+  rw hN at *,
+  specialize h1 n (by {
+    calc n ≥ max N1 N2 : by exact hn
+      ... ≥ N1 : le_max_left N1 N2
+  }),
+  specialize h2 n (by {
+    calc n ≥ max N1 N2 : by exact hn
+      ... ≥ N2 : le_max_right N1 N2
+  }),
+  rw abs_lt at *,
+  cases h1,
+  cases h2,
+  split;
+  linarith,
 end
 
 
@@ -717,7 +765,47 @@ lemma tendsto_bounded_mul_zero {a : ℕ → ℝ} {b : ℕ → ℝ}
   (hA : is_bounded a) (hB : is_limit b 0) 
   : is_limit (a*b) 0 :=
 begin
-  sorry,
+  intros ε heps,
+  cases hA with B hBound,
+  
+  by_cases bpos : B > 0,
+  {
+    cases hB (ε/B) (by {exact div_pos heps bpos}) with N hN,
+    use N,
+    intros n hn,
+    specialize hBound n,
+    simp at *,
+    specialize hN n hn,
+    rw abs_mul,
+    have : B ≠ 0, by linarith,
+    rw (by {field_simp,ring} : ε = B * (ε / B) ),
+    apply mul_lt_mul',
+    exact hBound,
+    exact hN,
+    exact abs_nonneg (b n),
+    assumption,    
+  },
+  {
+    cases hB ε heps with N hN,
+    use N,
+    intros n hn,
+    simp,
+    rw abs_mul,
+    specialize hBound n,
+    have : B ≥ 0, 
+    calc B ≥ |a n| : by exact hBound
+      ... ≥ 0 : by exact abs_nonneg _,
+    have : B = 0, by linarith,
+    have ha0 : |a n| = 0, 
+    {
+      apply le_antisymm,
+      { linarith},
+      exact abs_nonneg _,
+    },
+    rw ha0,
+    rw zero_mul,
+    assumption,
+  }
 end
 
 -- we can make more definitions
