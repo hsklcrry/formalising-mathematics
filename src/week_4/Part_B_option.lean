@@ -36,6 +36,7 @@ variables {X Y : Type}
 
 def g (y : Y) (f : X → Y) : option X → Y := λ t, option.rec y f t
 
+
 -- I claim that `g` is the function we require. Note
 -- that `g` takes `f` and `y` as explicit inputs 
 -- so it's `g f y`. Its values on `none` and `some x` are *by definition*
@@ -73,7 +74,29 @@ def option_func (f : X → Y) : option X → option Y :=
 -- `none` and `some x` cases.
 lemma option_id (ox : option X) : option_func (id : X → X) ox = ox :=
 begin
-  sorry
+  ext x,
+  split,
+  {
+    intro h,
+    cases ox,
+    {
+      contradiction,
+    },
+    {
+      simp at h,
+      simp,
+      have : option_func id (some ox) = some ox, by refl,
+      rw this at h,
+      rw option.some_inj at h,
+      assumption
+    }
+  },
+  {
+    simp,
+    intro h,
+    rw h,
+    refl,
+  }
 end
 
 variable (Z : Type)
@@ -81,7 +104,24 @@ variable (Z : Type)
 lemma option_comp (f : X → Y) (g : Y → Z) (ox : option X) :
   option_func (g ∘ f) ox = (option_func g) (option_func f ox) :=
 begin
-  sorry
+  cases ox,
+  ext x,
+  split,
+  {
+    simp,
+    intro h,
+    rw <-h,
+    refl,
+  },
+  {
+    simp,
+    intro h,
+    rw <-h,
+    refl,
+  },
+  {
+    refl,
+  }
 end
 
 -- Now we define the structure of a monad, an `eta` and a `mu`.
@@ -96,7 +136,7 @@ def mu {X : Type} : option (option X) → option X :=
 
 lemma eta_nat (f : X → Y) (x : X) : option_func f (eta x) = eta (f x) :=
 begin
-  sorry
+  refl,
 end
 
 -- mu is a natural transformation
@@ -104,7 +144,13 @@ end
 lemma mu_nat (f : X → Y) (oox : option (option X)) :
   option_func f (mu oox) = mu (option_func (option_func f) oox) :=
 begin
-  sorry
+  cases oox,
+  {
+    refl,
+  },
+  {
+    refl,
+  }
 end
 
 -- coherence conditions (if I got them right!)
@@ -112,17 +158,19 @@ end
 lemma coherence1 (ooox : option (option (option X))) :
   mu ((option_func mu) ooox) = mu (mu ooox) :=
 begin
-  sorry
+  cases ooox;
+  refl,
 end
 
 lemma coherence2a (ox : option X) : mu (eta ox) = ox :=
 begin
-  sorry
+  refl,
 end
 
 lemma coherence2b (ox : option X) : mu (option_func eta ox) = ox :=
 begin
-  sorry
+  cases ox;
+  refl,
 end
 
 -- please feel free to check -- I don't know much about monads!
