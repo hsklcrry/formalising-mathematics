@@ -275,17 +275,64 @@ end
 
 lemma preimage_injective (hf : surjective f) : injective (λ T, f ⁻¹' T) :=
 begin
-  sorry
+  intros A B h,
+  dsimp at h,
+  ext y,
+  split,
+  {
+    intro hxA,
+    rcases hf y with ⟨x,rfl⟩,
+    have : x ∈ f ⁻¹' A, by exact hxA,
+    rw h at this,
+    exact this, 
+  },
+  {
+    intro hxB,
+    rcases hf y with ⟨x,rfl⟩,
+    have : x ∈ f ⁻¹' B, by exact hxB,
+    rw <- h at this,
+    exact this, 
+  }
 end
 
 lemma image_surjective (hf : surjective f) : surjective (λ S, f '' S) :=
 begin
-  sorry
+  intro B,
+  use f ⁻¹'(B),
+  dsimp,
+  ext y,
+  split,
+  {
+    rintros ⟨ x, hx, rfl ⟩,
+    assumption,
+  },
+  {
+    intro hyB,
+    rcases hf y with ⟨x, rfl⟩,
+    use [x, hyB],
+  }
 end
 
 lemma preimage_surjective (hf : injective f) : surjective (λ S, f ⁻¹' S) :=
 begin
-  sorry
+  intro A,
+  use f '' A,
+  dsimp,
+  ext x,
+  split,
+  {
+    simp,
+    intros x hxA h,
+    cases hf h,
+    assumption
+  },
+  {
+    intro h,
+    use x,
+    split,
+    assumption,
+    refl,
+  }
 end
 
 /-!
@@ -310,7 +357,21 @@ variables (ι : Type) (F : ι → set X) (x : X)
 lemma image_Union (F : ι → set X) (f : X → Y) :
   f '' (⋃ (i : ι), F i) = ⋃ (i : ι), f '' (F i) :=
 begin
-  sorry
+  ext x,
+  split,
+  {
+    simp,
+    intros x i hx hf,
+    use [i, x],
+    split;assumption
+  },
+  {
+    simp,
+    intros x i hx hf,
+    use [i, x],
+    assumption,
+    exact hf,
+  },
 end
 
 /-!
@@ -331,5 +392,16 @@ The lemma for elements of a bounded union is:
 lemma preimage_bUnion (F : ι → set Y) (Z : set ι) :
   f ⁻¹' (⋃ (i ∈ Z), F i) = ⋃ (i ∈ Z), f ⁻¹' (F i) :=
 begin
-  sorry
+  ext x,
+  split,
+  {
+    simp,
+    intros i hiZ hfx,
+    use [i, hiZ, hfx],
+  },
+  {
+    simp,
+    intros i hiZ hfx,
+    use [i, hiZ, hfx],
+  }
 end
