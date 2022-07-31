@@ -198,7 +198,22 @@ end
 
 lemma image_comp (S : set X) : (g ∘ f) '' S = g '' (f '' S) :=
 begin
-  sorry
+  ext x,
+  split,
+  {
+    rintro ⟨ x,h2,rfl⟩,
+    simp,
+    use x,
+    split, 
+    assumption,
+    refl,
+  },
+  {
+    rintro ⟨ x, h1, rfl ⟩,
+    simp, 
+    rcases h1 with ⟨ s, hs, rfl ⟩,
+    use [s, hs],
+  }
 end
 
 open function
@@ -206,7 +221,31 @@ open function
 -- don't forget you can use `dsimp` to tidy up evaluated lambdas
 lemma image_injective : injective f → injective (λ S, f '' S) :=
 begin
-  sorry
+  intro hinj,
+  intros A B heq,
+  dsimp at heq,
+  ext x,
+  split,
+  {
+    intro hxA,
+    have : f x ∈ f '' A, 
+    use [x, hxA],
+    rw heq at *,
+    rcases this with ⟨b, hb, hf ⟩,
+    specialize hinj hf,
+    rw <- hinj,
+    exact hb
+  },
+  {
+    intro hxB,
+    have : f x ∈ f '' B, 
+    use [x, hxB],
+    rw <- heq at *,
+    rcases this with ⟨a, ha, hf ⟩,
+    specialize hinj hf,
+    rw <- hinj,
+    exact ha
+  }
 end
 
 /-!
@@ -223,14 +262,15 @@ but in fact both sides are equal by definition.
 
 example (S : set X) : S = id ⁻¹' S :=
 begin
-  sorry
+  refl,
 end
 
 -- Do take a look at the model solutions to this one (which I'll upload 
 -- after the workshop )
+
 example (T : set Z) : (g ∘ f) ⁻¹' T = f ⁻¹' (g ⁻¹' T) :=
 begin
-  sorry
+  refl,
 end
 
 lemma preimage_injective (hf : surjective f) : injective (λ T, f ⁻¹' T) :=
