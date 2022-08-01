@@ -210,6 +210,54 @@ injectivity.
 lemma closed_of_compact (S : set X) (hS : is_compact S)
   (C : set X) (hC : is_closed C) : is_compact (S ∩ C) :=
 begin
-  sorry,
+  rw compact_iff_finite_subcover' at hS ⊢,
+  intros _ _ hopen hsub,
+  rw is_closed at hC,
+  let V : option ι → set X := λ x, option.rec Cᶜ U x,
+  have H : S ⊆ ⋃ (i : option ι), V i,
+  {
+    intros s hs,
+    by_cases h : s ∈ C,
+    {
+      rcases hsub ⟨hs, h⟩ with ⟨Ui, h1, hxUi ⟩,
+      rcases h1 with ⟨i, rfl⟩,
+      simp,
+      use [some i],
+      exact hxUi,
+    },
+    {
+      simp,
+      use [none],
+    }
+  },
+  rcases hS V (by {intro oi, cases oi, {simp,assumption},{apply hopen oi,}}) H
+    with ⟨t, ht_fin, hfincover⟩,
+  
+  set t' := some ⁻¹' t with ht', 
+  use [t'],
+  split,
+  {
+    apply set.finite.preimage,
+    intros v1 v2 v3 v4 h,
+    rwa <- option.some_inj,
+    exact ht_fin,
+  },
+  {
+    intros s hs,
+    cases hs,
+    cases hfincover hs_left with A hA,
+    simp at hA,
+    rcases hA with ⟨⟨ oi, rfl⟩ , hsA⟩,
+    rcases hsA with ⟨ B, h₁, hsB ⟩,
+    simp at h₁,
+    rcases h₁ with ⟨h,rfl⟩,
+
+    cases oi with oi,
+    {contradiction},
+    {
+      simp,
+      use [oi, h, hsB],
+    }
+  }
 end
 
