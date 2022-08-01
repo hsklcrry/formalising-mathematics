@@ -161,10 +161,28 @@ begin
   set U' := λ (i : ι), f⁻¹'(U i) with hU',
   have hopenU' : ∀ i, is_open (U' i),
   {intro i, exact continuous_def.mp hf (U i) (h i)},
-  obtain H := hS U' hopenU' (by {rw hU',simp, sorry}),
+  obtain H := hS U' hopenU' (by 
+  {
+    rw hU',simp, 
+    intros s hs,
+    have : f s ∈ T, by {simp, use [s,hs]},
+    simp,
+    specialize hT this,
+    simp at hT,
+    cases hT with i,
+    use i, assumption,
+  }),
   rcases H with ⟨t, ht_fin, hcover⟩,
   use [t, ht_fin],
-  sorry
+  intros y hy,
+  rw hT_def at hy,
+  rcases hy with ⟨x, hx, rfl⟩,
+  rcases hcover hx with ⟨A, ⟨i,H⟩, hxA⟩,
+  simp at H,
+  rw <- H at hxA,
+  simp,
+  simp at hxA,
+  use [i, hxA],
 end
 
 /-
