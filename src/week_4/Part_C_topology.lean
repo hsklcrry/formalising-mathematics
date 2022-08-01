@@ -157,6 +157,13 @@ begin
   -- Note that `set T := ...` is about the *tactic* `set`.
 
   -- OK let's go.
+  intros _ _ h hT,
+  set U' := λ (i : ι), f⁻¹'(U i) with hU',
+  have hopenU' : ∀ i, is_open (U' i),
+  {intro i, exact continuous_def.mp hf (U i) (h i)},
+  obtain H := hS U' hopenU' (by {rw hU',simp, sorry}),
+  rcases H with ⟨t, ht_fin, hcover⟩,
+  use [t, ht_fin],
   sorry
 end
 
