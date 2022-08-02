@@ -227,7 +227,7 @@ end
 -- It's called `le_principal_iff` in mathlib but why
 -- not try proving it yourself?
 
-example : F ≤ 𝓟 S ↔ S ∈ F :=
+theorem principal_ge : F ≤ 𝓟 S ↔ S ∈ F :=
 begin
   rw le_def,
   split,
@@ -408,5 +408,43 @@ end
 -- to skip it.
 theorem cofinite_not_principal : ∀ S : set ℕ, cofinite ℕ ≠ 𝓟 S :=
 begin
-  sorry,
+  intros S,
+  intro h,
+  have hle : cofinite ℕ ≤ 𝓟 S,
+  { apply le_of_eq h },
+  have hS : S ∈ cofinite ℕ,
+  { simp at hle, assumption },
+  have hSinf : S.infinite, 
+  {
+    apply infinite_of_finite_compl,
+    apply hS,
+  },
+  cases set.infinite.nonempty hSinf with a ha,
+  have h1 : S \ {a} ∈ cofinite ℕ,
+  {
+    rw cofinite,
+    simp,
+    have H1 : (S \ {a})ᶜ = Sᶜ ∪ {a},
+    {
+      ext x,
+      simp at ⊢,
+      tauto,
+    },
+    rw H1,
+    have H2 : ({a} : set ℕ).finite,
+    { exact finite_singleton a},
+    have H3 : Sᶜ.finite,
+    {exact mem_cofinite.mp hS,},
+    exact finite.union H3 H2,
+  },
+  have h2 : S\{a} ∉ 𝓟 S,
+  {
+    simp,
+    intro h₁,
+    obtain h₂ := h₁ ha,
+    simp at h₂,
+    contradiction,
+  },
+  rw h at h1,
+  contradiction,
 end
