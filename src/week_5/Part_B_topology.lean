@@ -36,13 +36,28 @@ open set
 example (a : α): filter α :=
 { sets := {X : set α | a ∈ interior X},
   univ_sets := begin
-    sorry,
+    dsimp,
+    rwa interior_univ,
+    apply mem_univ,
   end,
   sets_of_superset := begin
-    sorry,
+    intros x y hx hxy,
+    dsimp at hx ⊢,
+    cases hx with U hU,
+    use [U],
+    dsimp at hU ⊢,
+    rcases hU with ⟨⟨hU1, hU2⟩, hU3⟩,
+    split,
+    split,
+    use hU1,
+    {intros x hx, exact hxy (hU2 hx)},
+    use hU3,
   end,
   inter_sets := begin
-    sorry,
+    intros x y hx hy,
+    dsimp at *,
+    rw interior_inter,
+    split; assumption,
   end }
 
 /-
@@ -81,7 +96,11 @@ involving `⊓`.
 example {x : α} {F G : filter α} (hxF : cluster_pt x F) (hFG : F ≤ G) :
   cluster_pt x G :=
 begin
-  sorry,
+  rw cluster_pt_iff at *,
+  intros U hU B hBG,
+  apply hxF hU, 
+  apply hFG,
+  assumption
 end
 
 /-
@@ -137,7 +156,20 @@ begin
   -- Let's tell the type class inference system about `hnf : f.ne_bot`
   haveI := hnF,
   -- see if you can take it from here.
-  sorry,
+  rw is_compact at *,
+  have H : F ≤ 𝓟 S,
+  {
+    simp at hFSC ⊢,
+    cases hFSC with h _,
+    exact h,
+  },
+  rcases hS H with ⟨a, ⟨haS, hcl⟩⟩,
+  use [a,haS],
+  obtain hclSC := cluster_pt.mono hcl hFSC,
+  rw <- is_closed.closure_eq hC,
+  rw mem_closure_iff_cluster_pt,
+  apply cluster_pt.mono hclSC,
+  simp,
 end
 
 
