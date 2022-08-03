@@ -156,7 +156,7 @@ begin
   -- Let's tell the type class inference system about `hnf : f.ne_bot`
   haveI := hnF,
   -- see if you can take it from here.
-  rw is_compact at *,
+  rw is_compact at hS,
   have H : F ≤ 𝓟 S,
   {
     simp at hFSC ⊢,

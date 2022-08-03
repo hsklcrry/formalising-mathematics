@@ -147,7 +147,18 @@ open set
 
 example (S : set X) (T : set Y) : f '' S ⊆ T ↔ S ⊆ f⁻¹' T :=
 begin
-  sorry,
+  split,
+  {
+    intros h x hx,
+    have H : f(x) ∈ T,
+    {apply h, use [x,hx]},
+    exact H,
+  },
+  {
+    intros h y hy,
+    rcases hy with ⟨ x, hx, rfl ⟩,
+    exact h hx,
+  }
 end
 
 /-
@@ -180,14 +191,21 @@ open filter
 example (F : filter X) : filter Y :=
 { sets := {T : set Y | f ⁻¹' T ∈ F },
   univ_sets := begin
-    sorry
+    exact univ_mem_sets,
   end,
   sets_of_superset := begin
-    sorry,
+    rintros x y hx hxy,
+    dsimp at hx ⊢,
+    apply mem_sets_of_superset hx,
+    exact preimage_mono hxy,
   end,
   inter_sets := begin
-    sorry
+    rintros x y hx hy,
+    dsimp at *,
+    apply inter_mem_sets,
+    assumption,assumption
   end, }
+
 
 -- this is `filter.mem_map` and it's true by definition.
 -- It's useful in the form `rw mem_map` if you want to figure out
@@ -207,7 +225,10 @@ end
 -- this is `filter.map_id` but see if you can prove it yourself.
 example (F : filter X) : F.map id = F :=
 begin
-  sorry
+  ext x,
+  rw filter.mem_map,
+  dsimp,
+  tauto,
 end
 
 -- pushing along g ∘ f is the same as pushing along f and then g
@@ -219,7 +240,10 @@ variables (Z : Type) (g : Y → Z)
 -- way around. See if you can prove it yourself.
 example (F : filter X) : F.map (g ∘ f) = (F.map f).map g :=
 begin
-  sorry,
+  ext x,
+  rw [filter.mem_map, filter.mem_map, filter.mem_map],
+  dsimp,
+  tauto,
 end
 
 open_locale filter -- for 𝓟 notation
@@ -228,7 +252,11 @@ open_locale filter -- for 𝓟 notation
 -- this is `filter.map_principal` but see if you can prove it yourself.
 example (S : set X) : (𝓟 S).map f = 𝓟 (f '' S) :=
 begin
-  sorry,
+  ext x,
+  rw [filter.mem_map, mem_principal_sets, mem_principal_sets],
+  split,
+  {intros h X hX, rcases hX with ⟨x, hx, rfl⟩, apply h, exact hx},
+  {intros h y hy, apply h, use [y, hy]}  
 end
 
 /-
