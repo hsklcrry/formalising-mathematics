@@ -289,7 +289,9 @@ end
 -- this is `tendsto_id` but see if you can prove it yourself.
 example (F : filter X) : tendsto id F F :=
 begin
-  sorry,
+  rw filter.tendsto_def,
+  dsimp,
+  tauto,
 end
 
 -- this is `tendsto.comp` but see if you can prove it yourself
@@ -297,7 +299,11 @@ example (F : filter X) (G : filter Y) (H : filter Z)
   (f : X → Y) (g : Y → Z)
   (hf : tendsto f F G) (hg : tendsto g G H) : tendsto (g ∘ f) F H :=
 begin
-  sorry,
+  rw filter.tendsto_def at *,
+  intros s hs,
+  specialize hg s hs,
+  specialize hf _ hg,
+  exact hf
 end
 
 -- I would recommend looking at the model answer to this one if
@@ -305,7 +311,8 @@ end
 lemma tendsto_comp_map (g : Y → Z) (F : filter X) (G : filter Z) :
   tendsto (g ∘ f) F G ↔ tendsto g (F.map f) G :=
 begin
-  sorry,
+  rw [filter.tendsto_def, filter.tendsto_def],
+  refl,
 end
 
 /-
@@ -341,13 +348,28 @@ guess the names of the lemmas):
 example (G : filter Y) : filter X :=
 { sets := {S : set X | ∃ T ∈ G, f ⁻¹' T ⊆ S},
   univ_sets := begin
-    sorry
+    dsimp,
+    use univ,
+    rcases G,
+    use G_univ_sets,
+    apply subset_univ,
   end,
   sets_of_superset := begin
-    sorry
+    intros x y hx hxy,
+    dsimp at hx ⊢,
+    rcases hx with ⟨ S, hS, hfS⟩,
+    use [S, hS],
+    apply subset.trans hfS hxy,
   end,
   inter_sets := begin
-    sorry
+    intros x y hx hy,
+    dsimp at *,
+    rcases hx with ⟨ S, hS, hS2 ⟩,
+    rcases hy with ⟨ T, hT, hT2 ⟩,
+    use S ∩ T,
+    split,
+    {exact inter_mem_sets hS hT},
+    {dsimp, exact inter_subset_inter hS2 hT2}
   end }
 
 -- Let's call this mem_comap
@@ -363,19 +385,53 @@ end
 -- this is comap_id
 example (G : filter Y) : comap id G = G :=
 begin
-  sorry
+  ext s,
+  rw mem_comap,
+  dsimp,
+  split,
+  {rintros ⟨a, b, hb⟩, exact mem_sets_of_superset b hb},
+  {intros hs, use [s, hs]}
 end
 
 -- this is comap_comap but the other way around
 lemma comap_comp (H : filter Z) : comap (g ∘ f) H = comap f (comap g H) :=
 begin
-  sorry
+  ext s,
+  rw [mem_comap,mem_comap],
+  split,
+  {
+    rintros ⟨T, hT, hT2⟩,
+    use [g ⁻¹' T],
+    rw mem_comap,
+    use [T, hT],
+    exact hT2,
+  },
+  {
+    rintros ⟨T, hT, hT2⟩,
+    rcases hT with ⟨R, ⟨hR, hR2⟩⟩,
+    use [R, hR],
+    refine subset.trans _ hT2,
+    refine preimage_mono hR2,
+  }
 end
 
 -- this is comap_principal. Remember `mem_principal_sets`! It's true by definition...
 example (T : set Y) : comap f (𝓟 T) = 𝓟 (f ⁻¹' T) :=
 begin
-  sorry
+  ext t,
+  rw mem_comap,
+  split,
+  {
+    rintros ⟨S, hS, hS2⟩,
+    refine subset.trans _ hS2,
+    refine preimage_mono hS,
+  },
+  {
+    intro h,
+    use [T], 
+    use mem_principal_self T,
+    exact h,
+  }
 end
 
 
@@ -387,7 +443,21 @@ end
 lemma filter.galois_connection (F : filter X) (G : filter Y) : 
   map f F ≤ G ↔ F ≤ comap f G :=
 begin
-  sorry,
+  split,
+  {
+    rintros hf,
+    rintros S ⟨T, ⟨hT,fTS⟩⟩,
+    apply mem_sets_of_superset _ fTS,
+    apply hf,
+    exact hT,
+  },
+  {
+    intro hf,
+    rintros S hS,
+    apply hf,
+    rw mem_comap,
+    use [S, hS],
+  }
 end
 
 -- indeed, `map f` and `comap f` form a Galois connection.
