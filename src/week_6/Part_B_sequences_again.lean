@@ -1,4 +1,5 @@
 import data.real.basic
+import data.set.basic
 import order.filter.at_top_bot
 import topology.instances.real
 /-
@@ -280,7 +281,11 @@ from Part A.
 -- facts from Part A.
 example (x : X) : continuous_at id x :=
 begin
-  sorry
+  rw continuous_at_def,
+  rw tendsto_def,
+  dsimp,
+  intros A hA,
+  exact hA,
 end
 
 -- recall we have `f : X → Y`. Now let's add in a `Z`.
@@ -289,9 +294,14 @@ variables (Z : Type) [topological_space Z] (g : Y → Z)
 -- this is called `continuous_at.comp`. Prove it yourself using
 -- facts from Part A.
 example (x : X) (hf : continuous_at f x) (hg : continuous_at g (f x)) :
-continuous_at (g ∘ f) x :=
+continuous_at (g ∘ f) x := 
+  --assume S hS, hf _ (hg S hS)
 begin
-  sorry
+  rw continuous_at_def at *,
+  rw tendsto_def at *,
+  dsimp,
+  intros S hS,
+  apply hf _ (hg S hS),
 end
 
 /-
@@ -332,7 +342,19 @@ example {α : Type} (f : α → Y) (g : α → Z) (x : X) (F : filter α) (y : Y
   (hf : tendsto f F (𝓝 y)) (hg : tendsto g F (𝓝 z)) :
   tendsto (λ x, (f x, g x)) F (𝓝 (y, z)) :=
 begin
-  sorry,
+  intros S hS,
+  rw map,
+  simp,
+  rw tendsto_def at *,
+  rcases mem_nhds_prod_iff.1 hS with ⟨U, ⟨hU, ⟨V, ⟨hV, hS⟩⟩⟩⟩,
+  refine mem_sets_of_superset _ (set.preimage_mono hS),
+  have : (λ (x : α), (f x, g x)) ⁻¹' U.prod V = f ⁻¹' U ∩ g ⁻¹' V, -- {x : α | f x ∈ U ∧ g x ∈ V },
+  {
+    ext x,
+    simp,
+  },
+  rw this,
+  refine inter_sets _ (hf U hU) (hg V hV),
 end
 
 /- Armed with `tendsto.prod_mk_nhds`, let's prove the version of `tendsto.mul`
@@ -353,7 +375,21 @@ lemma key_lemma {α M : Type} [topological_space M] [has_mul M]
   (hcontinuous : continuous_at (λ (mn : M × M), mn.1 * mn.2) (a,b)) :
   tendsto (f * g) F (𝓝 (a * b)) :=
 begin
-  sorry
+  set f1 : M × M → M := λ mn, mn.1 * mn.2 with hf1,
+  set f2 : α → M × M := λ x, (f x, g x) with hf2,
+  rw continuous_at at *,
+  suffices : f1 ∘ f2 = f * g,
+  {
+    obtain H₁ : tendsto f2 F (𝓝 (a, b)) := tendsto.prod_mk_nhds hf hg,
+    obtain H₂ := tendsto.comp hcontinuous H₁,
+    exact H₂,
+  },
+  {
+    ext a,
+    rw [hf1, hf2],
+    dsimp,
+    refl,
+  }  
 end
 
 -- The final ingredient is that multiplication is continuous on ℝ, which we
