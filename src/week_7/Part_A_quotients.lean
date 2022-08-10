@@ -222,18 +222,30 @@ def r_refl : reflexive r :=
 begin
   -- you can start with `unfold reflexive` if you want to see what
   -- you're supposed to be proving here.
-  sorry,
+  unfold reflexive,
+  rintro ⟨x,y⟩,
+  rw r_def,
 end
 
 -- hint: `linarith` is good at linear arithmetic. 
 def r_symm : symmetric r :=
 begin
-  sorry
+  unfold symmetric,
+  rintro ⟨x,y⟩,
+  rintros ⟨x1,y1⟩,
+  rw [r_def, r_def],
+  dsimp,
+  intro h,
+  linarith,
 end
 
 def r_trans : transitive r :=
 begin
-  sorry
+  unfold transitive,
+  intros x y z,
+  rw [r_def, r_def, r_def],
+  intros h1 h2,
+  linarith,
 end
 
 -- now let's give N2 a setoid structure coming from `r`.
@@ -339,7 +351,9 @@ variable {T : Type}
 def universal1 (g : Z → T) :
   {f : N2 → T // ∀ x y : N2, x ≈ y → f x = f y} :=
 ⟨λ n2, g ⟦n2⟧, begin
-  sorry
+  intros a b hab,
+  have : ⟦a⟧ = ⟦b⟧, by {exact quotient.eq.mpr hab},
+  rw this,
 end⟩
 
 -- To go the other way, we use a new function called `quotient.lift`.
@@ -470,7 +484,18 @@ def neg_aux (ab : N2) : Z := ⟦(ab.2, ab.1)⟧
 def neg : Z → Z := quotient.lift neg_aux
 begin
   -- ⊢ ∀ (a b : N2), a ≈ b → neg_aux a = neg_aux b
-  sorry,
+  intros x y hxy,
+  rw [neg_aux_def,neg_aux_def],
+  have : ⟦x⟧ = ⟦y⟧, by {exact quotient.eq.mpr hxy},
+  cases x,
+  cases y,
+  dsimp,
+  have h : (x_snd, x_fst) ≈ (y_snd, y_fst), 
+  {
+    rw equiv_def' at *,
+    linarith,
+  },
+  apply quotient.eq.mpr h,
 end
 
 -- `-z` notation
@@ -503,7 +528,14 @@ rfl -- true by def
 
 def add : Z → Z → Z := quotient.lift₂ add_aux 
 begin
-  sorry,
+  intros x y x1 y1 h1 h2,
+  cases x,
+  cases y,
+  cases x1,
+  cases y1,
+  rw equiv_def' at *,
+  simp,
+  linarith,
 end
 
 -- notation for addition
@@ -539,18 +571,36 @@ def add_comm_group : add_comm_group Z :=
     simp,
   end,
   add_zero := begin
-    sorry
+    intro a,
+    apply quotient.induction_on a,
+    rintro ⟨x,y⟩,
+    simp,
   end,    
   -- Here there are three variables so it's `quotient.induction_on₃`
   -- Remember the `ring` tactic will prove identities in `ℕ`.
   add_assoc := begin
-    sorry
+    intros x y z,
+    apply quotient.induction_on x,
+    apply quotient.induction_on y,
+    apply quotient.induction_on z,
+    rintros ⟨x1,x2⟩ ⟨y1,y2⟩ ⟨z1,z2⟩,
+    simp,
+    ring,
   end,
   add_left_neg := begin
-    sorry
+    intro a,
+    apply quotient.induction_on a,
+    rintro ⟨x,y⟩,
+    simp,
+    ring,
   end,
   add_comm := begin
-    sorry
+    intros x y,
+    apply quotient.induction_on x,
+    apply quotient.induction_on y,
+    rintros ⟨x1,x2⟩ ⟨y1,y2⟩,
+    simp,
+    ring,
   end,
 }
 
@@ -579,7 +629,13 @@ def mul_aux (ab cd : N2) : N2 :=
 -- unfortunately non-linear. However `nlinarith` is OK at non-linear arithmetic...
 def mul : Z → Z → Z := quotient.map₂ mul_aux 
 begin
-  sorry
+  intros x y hxy x1 y1 hxy1,
+  cases x,
+  cases y,
+  cases x1,
+  cases y1,
+  simp at hxy hxy1 ⊢,
+  nlinarith,  
 end
 
 -- notation for multiplication
@@ -603,19 +659,47 @@ def comm_ring : comm_ring Z :=
   end,
   -- etc etc
   one_mul := begin
-    sorry
+    rintro a,
+    apply quotient.induction_on a,
+    intro A,
+    cases A,
+    simp,
   end,
   mul_one := begin
-    sorry
+    intro a,
+    apply quotient.induction_on a,
+    intro A,
+    cases A,
+    simp,
   end,
   left_distrib := begin
-    sorry
+    intros a b c,
+    apply quotient.induction_on₃ a b c,
+    intros A B C,
+    cases A,
+    cases B,
+    cases C,
+    simp,
+    ring,
   end,
   right_distrib := begin
-    sorry
+    intros a b c,
+    apply quotient.induction_on₃ a b c,
+    intros A B C,
+    cases A,
+    cases B,
+    cases C,
+    simp,
+    ring,
   end,
   mul_comm := begin
-    sorry
+    intros a b,
+    apply quotient.induction_on₂ a b,
+    intros A B,
+    cases A,
+    cases B,
+    simp,
+    ring,
   end,
   ..add_comm_group
 }
