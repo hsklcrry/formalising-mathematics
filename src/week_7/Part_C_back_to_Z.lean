@@ -17,13 +17,49 @@ def pℤ (ab : N2) : ℤ := (ab.1 : ℤ) - ab.2
 -- Start with `intro z, apply int.induction_on z` to prove this.
 theorem pℤsurj : function.surjective pℤ :=
 begin
-  sorry,
+  intro z,
+  apply int.induction_on z,
+  {use (0,0), refl,},
+  {
+    intro i,
+    intro h,
+    rcases h with ⟨x,hx⟩,
+    cases x,
+    use (x_fst + 1, x_snd),
+    rw <-hx,
+    unfold pℤ,
+    dsimp,
+    ring,
+  },
+  {
+    intros i h,
+    rcases h with ⟨x,hx⟩,
+    cases x,
+    use (x_fst, x_snd + 1),
+    rw <-hx,
+    unfold pℤ,
+    dsimp,
+    ring,
+  },
 end
 
 -- The fibres of pℤ are equivalence classes.
 theorem pℤequiv (ab cd : N2) : ab ≈ cd ↔ pℤ ab = pℤ cd :=
 begin
-  sorry,
+  unfold pℤ,
+  split,
+  {
+    intro h,
+    cases ab,
+    cases cd,
+    simp [refl] at h ⊢,
+    linarith,
+  },
+  {
+    intro h,
+    simp,
+    linarith,
+  }
 end
 
 -- It's helpful to have a random one-sided inverse coming from surjectivity
@@ -37,7 +73,30 @@ classical.some_spec (pℤsurj z)
 -- Now we can prove that ℤ and pℤ are universal.
 theorem int_is_universal : is_universal ℤ pℤ :=
 begin
-  sorry,
+  split,
+  {intros x y h, exact (pℤequiv x y).1 h},
+  {
+    intros,
+    use (f ∘ invp),
+    split,
+    {
+      rw function.comp.assoc,
+      ext z,
+      simp,
+      apply h,
+      apply (pℤequiv _ _).2,
+      apply symm,
+      apply invp_inv _,
+    },
+    {
+      intros k h,
+      apply symm,
+      calc f ∘ invp = (k ∘ pℤ) ∘ invp   : by rw h
+                ... = k ∘ (pℤ ∘ invp)   : by refl
+                ... = k ∘ id            : by {ext x, simp}
+                ... = k                 : by {simp},
+    },
+  }
 end
 
 -- and now we can prove they're in bijection

@@ -125,7 +125,15 @@ lemma useful {X : Type} [s : setoid X] {Q : Type}
   {p : X → Q} (h1 : is_universal Q p) :
   g_univ h1 h1.1 = id :=
 begin
-  sorry
+  cases h1,
+  obtain H := h1_right Q p (by {intros x y h, exact h1_left x y h, }),
+  cases H with g hg,
+  rcases hg with ⟨hpq,H₁⟩,
+  apply symm,
+  convert H₁ id (by simp),
+  apply symm,
+  apply g_univ_unique,
+  rw <-hpq,
 end
 
 -- A variant of the previous lemma where we say `g q = q` rather than `g = id`
@@ -144,19 +152,55 @@ noncomputable def univ_equiv {X : Type} [s : setoid X] {Q1 Q2 : Type}
   Q1 ≃ Q2 :=
 { to_fun := g_univ h1 h2.1,
   inv_fun := g_univ h2 h1.1,
-  left_inv := begin
-    sorry
+  left_inv := 
+  begin
+    set m := (g_univ h2 h1.1) ∘ (g_univ h1 h2.1) with hm,
+    intros q, 
+    show m q = id q,
+    have H : p1 = m ∘ p1,
+    {
+      rw [hm, function.comp.assoc],
+      rw <- g_univ_spec h1 h2.1,
+      exact g_univ_spec h2 h1.1,
+    },
+    obtain H1 := g_univ_unique h1 h1.1 id (by simp),
+    obtain H2 : m = g_univ h1 h1.1 := by {exact g_univ_unique h1 _ m H},
+    rw [H1, H2],
   end,
   right_inv := begin
-    -- same proof, mutatis mutandis
-    sorry
+    set m := (g_univ h1 h2.1) ∘ (g_univ h2 h1.1) with hm,
+    intros q, 
+    show m q = id q,
+    have H : p2 = m ∘ p2,
+    {
+      rw [hm, function.comp.assoc],
+      rw <- g_univ_spec h2 h1.1,
+      exact g_univ_spec h1 h2.1,
+    },
+    obtain H1 := g_univ_unique h2 h2.1 id (by simp),
+    obtain H2 : m = g_univ h2 h2.1 := by {exact g_univ_unique h2 _ m H},
+    rw [H1, H2],
   end }
 
 -- Lean's builtin quotients are universal
 theorem quotient_is_universal {X : Type} [s : setoid X] :
   is_universal (quotient s) quotient.mk :=
 begin
-  sorry
+  split,
+  {exact λ {x y : X}, quotient.eq.mpr},
+  {
+    intros,
+    use quot.lift f h,
+    split,
+    {refl},
+    {
+      rintros k rfl,
+      ext x,
+      apply quotient.induction_on x,
+      intro a,
+      refl,
+    }
+  }
 end
 
 -- so any universal object is isomorphic to the quotient object.
