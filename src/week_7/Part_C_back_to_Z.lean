@@ -80,13 +80,10 @@ begin
     use (f ∘ invp),
     split,
     {
-      rw function.comp.assoc,
       ext z,
-      simp,
       apply h,
       apply (pℤequiv _ _).2,
-      apply symm,
-      apply invp_inv _,
+      simp,
     },
     {
       intros k h,
