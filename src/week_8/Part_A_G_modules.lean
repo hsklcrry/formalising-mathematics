@@ -88,12 +88,13 @@ example : (g₁ * g₂) • m = g₁ • g₂ • m := mul_smul g₁ g₂ m -- n
 -- try some examples for yourself.
 example : (g1 * g2) • (m1 + m2) = g1 • g2 • m1 + g1 • g2 • m2 :=
 begin
-  sorry
+  rw mul_smul g1 g2 (m1 + m2),
+  simp,
 end
 
 example : (1 * 1 * 1 : G) • m = m :=
 begin
-  sorry
+  simp,
 end 
 
 end distrib_mul_action_stuff
@@ -214,8 +215,7 @@ example (m₁ m₂ : M) : φ (m₁ + m₂) = φ m₁ + φ m₂ := φ.map_add m�
 
 example : φ (g • (m₁ + m₂)) = g • φ m₁ + g • φ m₂ :=
 begin
-  -- what will you rewrite? Will you rewrite at all?
-  sorry
+  simp,
 end
 
 /-
@@ -241,14 +241,14 @@ begin
   -- but will eventually find the answer to this one. 
   -- But you can guess it quicker!
   -- what will you rewrite?
-  sorry
+  exact φ.map_zero,
 end
 
 -- Can you solve it in term mode like in those earlier examples?
-example : φ 0 = 0 := sorry
+example : φ 0 = 0 := φ.map_zero
 
 -- Can you change `sorry` to the name of a tactic?
-example : φ 0 = 0 := by sorry
+example : φ 0 = 0 := by exact φ.map_zero
 
 /-
 
@@ -299,7 +299,7 @@ example (m : M) :
 example :
   (ψ ∘ᵍ φ) (g • (m1 + m2)) = g • (ψ (φ m1) + ψ (φ m2)) :=
 begin
-  simp,
+  simp only [map_add, comp_apply, map_smul],
 end
 
 end distrib_mul_action_hom
@@ -337,21 +337,59 @@ structure sub_distrib_mul_action
   (G : Type) [monoid G]
   (M : Type) [add_comm_group M] [distrib_mul_action G M] :=
 (carrier : set M)
+(hAction : ∀ (g : G) (m ∈ carrier), g • m ∈ carrier)
 
 -- LEAVE THESE FOUR SORRYS ALONE
 def distrib_mul_action_hom.ker (φ : M →+[G] N) :
   sub_distrib_mul_action G M :=
-⟨{m | φ m = 0}⟩
+⟨{m | φ m = 0}, 
+begin
+  intros,
+  simp at *,
+  rw H,
+  simp only [smul_zero],
+end 
+⟩
 
 def distrib_mul_action_hom.range (φ : M →+[G] N) :
   sub_distrib_mul_action G N :=
-⟨set.range φ⟩
+⟨set.range φ, begin 
+  intros,
+  simp at *,
+  rcases H with ⟨m, rfl⟩,
+  use g • m,
+  simp,
+end 
+⟩
 
 instance : has_coe (sub_distrib_mul_action G M) (set M) :=
 ⟨sub_distrib_mul_action.carrier⟩
 
+--lemma sub_distrib_mul_action.ext_iff [sub_distrib_mul_action G M] : 
+
+instance : has_coe (sub_distrib_mul_action G M) (distrib_mul_action G M) := 
+⟨λ a, by {cases a, assumption} ⟩
+
+@[simp] lemma carrier_coe_eq {S : sub_distrib_mul_action G M} : ↑S = S.1 := by refl
+
 theorem sub_distrib_mul_action.ext_iff {A B : sub_distrib_mul_action G M} :
-  A = B ↔ ∀ m : M, m ∈ (A : set M) ↔ m ∈ (B : set M) := sorry
+  A = B ↔ ∀ m : M, m ∈ (A : set M) ↔ m ∈ (B : set M) := 
+begin
+  split,
+  {
+    intro hab,
+    rwa hab,
+    simp,
+  },
+  {
+    intro h,
+    cases A,
+    cases B,
+    simp only,
+    ext m,
+    apply h m,
+  }
+end 
 
 /-
 
@@ -392,7 +430,7 @@ possible useful definitions of being "true by definition" .
 begin
   rw is_exact.def_cat,
   rw sub_distrib_mul_action.ext_iff, 
-  sorry, -- will be refl once we have sub-G-modules.
+  refl, -- will be refl once we have sub-G-modules.
 end
 
 /-
@@ -466,13 +504,15 @@ begin
      with `cases`, and even more effectively with
      `rcases`.
   -/
-  sorry,
+  rcases h with ⟨_,h,_⟩,
+  exact h
 end
 
 
 def surjective : surjective ψ :=
 begin
-  sorry,
+  rcases h with ⟨_,_,h⟩,
+  exact h
 end
 
 -- again we don't really want the user messing
@@ -489,7 +529,23 @@ an element of the middle module is in the
 image of `φ` if and only if it is in the kernel of `ψ`.   -/
 theorem exact_set : ∀ n : N, (∃ m : M, φ m = n) ↔ ψ n = 0 :=
 begin
-  sorry,
+  intro n,
+  split,
+  {
+    rintros ⟨m, H⟩,
+    obtain H1 := h.1, 
+    simp only [is_exact.def_set] at H1,
+    specialize (H1 n),
+    apply H1.1,
+    use [m, H],
+  },
+  {
+    intro hker,
+    obtain H1 := h.1, 
+    simp only [is_exact.def_set] at H1,
+    specialize (H1 n),
+    apply H1.2 hker,
+  }
 end
 
 /--
@@ -497,7 +553,8 @@ In a short exact sequence `short_exact_sequence φ ψ`,
 the image of `φ` equals kernel of `ψ`.   -/
 def exact_cat : φ.range = ψ.ker :=
 begin
-  sorry,
+  cases h with h _,
+  exact h,
 end
 
 /-
