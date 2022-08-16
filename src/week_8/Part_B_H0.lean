@@ -27,17 +27,23 @@ def H0_subgroup (G M : Type)
     -- you can start with this
     rw mem_set_of_eq, -- says that `a ∈ { x | p x}` is the same as `p a`.
     -- can you take it from there?
-    sorry
+    exact smul_zero
   end,
   -- Axiom 2 : closed under `+`
   add_mem' := begin
     intros a b ha hb g,
     rw mem_set_of_eq at *, -- that's how I'd start
-    sorry,
+    simp,
+    rw [ha g,hb g],
   end,
   -- Axiom 3 : closed under `-`
   neg_mem' := begin
-    sorry
+    intro x,
+    intro h,
+    rw mem_set_of_eq at *,
+    intro g,
+    simp,
+    exact h g,
   end }
 
 /-
@@ -56,12 +62,26 @@ def H0 (G M : Type)
   [monoid G] [add_comm_group M] [distrib_mul_action G M] : Type :=
 {m : M // ∀ g : G, g • m = m }
 
+
+
 -- let's make an API and prove stuff about `H0 G M` in the `H0` namespace.
 namespace H0
 
 -- let `G` be a group (or a monoid) and let `M` be a `G`-module.
 variables {G M : Type}
   [monoid G] [add_comm_group M] [distrib_mul_action G M]
+
+def H0_subaction : sub_distrib_mul_action G M :=
+⟨ {m : M | ∀ g : G, g • m = m }, 
+begin 
+  intros,
+  simp at *,
+  intro g2,
+  rw H g,
+  apply H,  
+end
+⟩
+
 
 /-
 We have defined `H0 G M` to be a type, a so-called subtype of `M`,
@@ -119,6 +139,7 @@ which is a subgroup, hence a group.
 
 -/
 
+
 -- tell type class inference that `H0 G M` is a group
 instance : add_comm_group (H0 G M) :=
 add_subgroup.to_add_comm_group (H0_subgroup G M)
@@ -156,13 +177,13 @@ end
 example (m₁ m₂ m₃ : H0 G M) : m₁ + (m₂ - m₁ + m₃) = m₃ + m₂ :=
 begin
   -- which tactic?
-  sorry
+  abel,
 end
 
 example (g : G) (m : H0 G M) : g • (m + m : M) = m + m :=
 begin
   -- can you help the simplifier?
-  sorry
+  simp [spec],
 end
 
 end H0
@@ -200,7 +221,9 @@ def H0_underlying_function (φ : M →+[G] N) (a : H0 G M) : H0 G N :=
   -- use φ.map_smul and a.spec to prove that this map is well-defined.
   -- Remember that `rw` doesn't work under binders, and ∀ is a binder, so start
   -- with `intros`.
-  sorry
+  intro g,
+  rw <-φ.map_smul,
+  rw H0.spec,
 end⟩
 
 /-- The group homomorphism  `H⁰(G,M) →+ H⁰(G,N)`
@@ -258,7 +281,7 @@ begin
   -- Unfold the definitions. It's true by definition.
   -- Look at the goal the way Lean is displaying it
   -- right now. It's just coercions everywhere. Ignore them.
-  sorry
+  refl,
 end
 
 open distrib_mul_action_hom
@@ -269,7 +292,8 @@ def id_apply (m : H0 G M) :
   (distrib_mul_action_hom.id G).H0 m = m :=
 begin
   -- remember extensionality. 
-  sorry,
+  ext,
+  refl,
 end
 
 variables {P : Type} [add_comm_group P] [distrib_mul_action G P]
@@ -278,7 +302,7 @@ def comp (φ : M →+[G] N) (ψ : N →+[G] P) :
   (ψ ∘ᵍ φ).H0 = ψ.H0.comp φ.H0 := 
 begin
   -- be sure to check out the proof in the solutions.
-  sorry
+  refl,
 end
 
 end H0
@@ -310,7 +334,12 @@ variables {G M N P : Type}
 theorem H0_hom.left_exact (φ : M →+[G] N) (hφ : injective φ) : 
   injective φ.H0 :=
 begin
-  sorry
+  unfold injective at *,
+  intros a₁ a₂ h,
+  ext,
+  apply hφ,
+  clear hφ,
+  refine (H0.ext_iff _ _).1 h,
 end
 
 
@@ -319,8 +348,61 @@ theorem H0_hom.middle_exact (φ : M →+[G] N)
   (ψ : N →+[G] P) (h : is_short_exact φ ψ) : 
   φ.H0.range = ψ.H0.ker :=
 begin
-  sorry,
+  unfold is_short_exact at *,
+  cases h with h1 _ _,
+  simp at h1,
+  ext n,
+  rw [add_monoid_hom.mem_ker, add_monoid_hom.mem_range],
+  rw [H0.ext_iff, n.coe_apply, H0.coe_zero],
+  specialize h1 n,
+  split,
+  {
+    rintro ⟨x, H⟩,
+    apply h1.1,
+    use x,
+    rwa <-H,
+    simp,
+  },
+  {
+    intro h,
+    rcases h1.2 h with ⟨m,hm⟩,
+    use m,
+    {
+      intro g,
+      cases n with _ hn,
+      specialize hn g,
+      simp at hm h h1 hn,
+      rw <-hm at hn,
+      cases h_right with hφ_injective _,
+      refine hφ_injective _,
+      convert hn,
+      exact map_smul φ g m,
+    },
+    {
+      cases n,
+      simp at hm ⊢,
+      ext,
+      simp,
+      assumption,
+    }
+  }
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- Do you think we should prove something weaker? I quite
 -- like the API we have for short exact sequences.
