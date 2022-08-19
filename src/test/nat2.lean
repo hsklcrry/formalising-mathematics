@@ -6,9 +6,6 @@ import data.finset.basic
 import data.nat.basic
 import tactic
 
---open_locale classical 
---noncomputable theory 
-
 #eval 1 % 0 
 
 def is_prime (p : nat) : Prop := 
@@ -19,14 +16,14 @@ begin
   rw is_prime,
   intro h,
   cases h with h₁ _,
-  linarith,
+  exact nat.lt_asymm h₁ h₁,
 end 
 
 theorem two_is_prime : is_prime 2 :=
 begin
   rw is_prime,
   split,
-  {linarith},
+  {exact one_lt_two},
   by_contra,
   rcases h with ⟨n, ⟨h₁, h₂, h₃⟩ ⟩ ,
   linarith,
@@ -43,9 +40,9 @@ begin
   apply hk,
   use p,
   split,
-  {linarith}, 
+  {assumption}, 
   split,
-  {linarith},
+  {assumption},
   assumption,
 end 
 
@@ -57,6 +54,9 @@ begin
 end 
 
 def primes : set ℕ := { p : ℕ | is_prime p}
+
+lemma prime_lt_one : ∀ p ∈ primes, p > 1 :=
+  λ p h, h.1
 
 example : 2 ∈ primes := by exact two_is_prime
 
@@ -105,7 +105,7 @@ begin
       have : (k / k) = 1, 
       { 
         apply nat.div_self,
-        linarith
+        exact nat.lt_of_succ_lt hn,
       },
       rw this,
       simp,
@@ -136,15 +136,17 @@ begin
           rw [mul_assoc, mul_comm],
           },
         cases pprime with hp₁ _,
-        rw lemma_div m₁ n₁ p₁ (by {linarith}),
+        rw lemma_div m₁ n₁ p₁ (by {exact nat.lt_of_succ_lt hp₁}),
         rw <-this,
         ring,
       },
       {
-        linarith,
+        contradiction,
       },
     },
 end
+
+open_locale big_operators
 
 theorem infinitude_of_primes : infinite primes :=
 begin
@@ -154,31 +156,48 @@ begin
   simp at b,
   set enum : primes → ℕ := λ p, p,
   set prod1 : ℕ := (∏ i in finprimes, enum i) with h,
-  have prod_div : ∀ q ∈ primes, prod1 = q * (prod1 / q),
+  have prod_div : ∀ q ∈ primes, ∃ m, prod1 = q * m,
   {
     intros q hq,
-    sorry,
+    obtain H1 := b q hq,
+    have H : enum ⟨ q, hq ⟩ * (∏ i in finprimes \ {⟨ q, hq ⟩ }, enum i) = ∏ i in finprimes, enum i,
+    {exact finset.mul_prod_diff_singleton (b q hq) enum,},
+    use (∏ i in finprimes \ {⟨ q, hq ⟩ }, enum i),
+    rw <- h at H,
+    simp at H ⊢,
+    apply symm,
+    convert H,
   },
   set p := prod1 + 1 with hp,
   have p_is_not_divisible : ∀ q ∈ primes, p % q = 1,
   {
     intros q qprime,
-    specialize prod_div q qprime,
+    cases prod_div q qprime with div1 hd,
     have : p % q + q * (p / q) = p, from nat.mod_add_div _ _,
     rw hp at *,
-    rw prod_div,
-    rw add_comm,
+    rw [hd,add_comm],
     simp,
     apply nat.mod_eq_of_lt,
-    cases qprime,
-    linarith,
+    exact prime_lt_one q qprime,
   },
   have p_prime : is_prime p,
   {
     split,
     rw [hp, h],
     simp,
-    {sorry},
+    {
+      apply finset.prod_induction,
+      {intros, refine mul_pos _ _; assumption},
+      {exact nat.one_pos},
+      {
+        intros, 
+        cases x with x xprop, 
+        obtain := prime_lt_one x xprop, 
+        simp, 
+        apply nat.lt_of_succ_lt, 
+        assumption
+      },
+    },
     {
       intro h,
       rcases h with ⟨n, ⟨h₁,h₂,h₃⟩⟩,
@@ -186,7 +205,8 @@ begin
       suffices : p % q = 0,
       {
         specialize p_is_not_divisible q hq1,
-        linarith,
+        rw p_is_not_divisible at this,
+        contradiction,
       },
       {
         cases hq1 with qpos _,
