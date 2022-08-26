@@ -3,6 +3,8 @@ import data.finset
 import data.nat.basic
 import category_theory.category
 
+import data.list.basic
+
 import algebra.big_operators.basic
 import tactic
 
@@ -31,7 +33,7 @@ structure Graph (V : Type u) :=
 
 @[ext]
 structure Grph :=
-{V : Type u} 
+(V : Type u)
 (adj : V → V → Prop)
 (sym : symmetric adj . obviously)
 (loopless : irreflexive adj . obviously)
@@ -166,7 +168,7 @@ def nhbd (v : G.V) : set G.V := set_of (G.adj v)
 lemma nhbd_def (v : G.V) : nhbd G (v : G.V) = {w : G.V | G.adj v w} := rfl
 
 def OneVertex : Grph :=
-⟨  (λ (v : fin 1) _, false), 
+⟨fin 1, (λ (v : fin 1) _, false), 
   (by {unfold symmetric, tauto}), 
   (by {intro, simp only [not_false_iff],}) ⟩ 
 
@@ -204,6 +206,46 @@ variables (G : Grph) {hfin : fintype G.V}
 
 def darts : set (G.V × G.V) := { e | ∃(x y : G.V), e = (x, y) ∧ G.adj x y}
 
+@[simp]
+lemma darts_mem (v w : G.V) : (v, w) ∈ darts G ↔ G.adj v w :=
+begin 
+  split,
+  {
+    intro h,
+    cases h with v₁ h₁,
+    rcases h₁ with ⟨ w₁, ⟨ hl, hr⟩ ⟩,
+    cases hl,
+    assumption,
+  },
+  {
+    intro h,
+    split,
+    use [w, h],
+  }
+end
+
+lemma darts_inv (v w : G.V) : (v,w) ∈ darts G → (w,v) ∈ darts G := 
+begin
+  tidy,
+  apply G.3,
+  assumption
+end 
+
+def darts_inverse : darts G → darts G :=
+λ ⟨d, hd⟩, ⟨(d.2,d.1), by 
+  {
+    apply darts_inv,
+    simp,
+    refine hd
+  }⟩
+
+lemma darts_involution : darts_inverse G ∘ darts_inverse G = id :=
+begin 
+  ext;
+  cases x; 
+  refl
+end
+
 def source {G : Grph} (a : darts G) : G.V := a.1.1
 
 @[simp] lemma source_def {G : Grph} ( d : darts G) : source d = d.1.1 := rfl
@@ -218,10 +260,37 @@ instance by_sources : (setoid (darts G)) :=
   end 
 }
 
+def dart_source : quotient (by_sources G) → G.V :=
+quot.lift source (by {intros,assumption})
+
+lemma dart_source_def {G : Grph} {x : darts G} : dart_source G ⟦x⟧ = source x := rfl
+
+@[simp]
+lemma dart_source_def' {G : Grph} {x : darts G} : dart_source G (quot.mk setoid.r x) = source x := rfl
+
+lemma dart_source_inj : function.injective (dart_source G) :=
+begin 
+  intros x y h,
+  set lx := quotient.out x with hx,
+  have h1 : quot.mk (by_sources G).r lx = x,
+  { exact quotient.out_eq x},
+
+  set ly := quotient.out y with hy,
+  have h2 : quot.mk (by_sources G).r ly = y,
+  { exact quotient.out_eq y},
+
+  rw [<-h1,<-h2] at *,
+  rw [dart_source_def', dart_source_def'] at h,
+  have : setoid.r lx ly,
+  {
+    exact h,
+  },
+  apply quotient.eq'.2 this,
+end 
+
 @[simp] 
 lemma eq_def : a ≈ b ↔ source a = source b :=
 begin
-  simp,
   split,
   {
     intro h,
@@ -233,7 +302,7 @@ begin
   }
 end 
 
-noncomputable instance : decidable_rel (by_sources G).r := 
+noncomputable instance test : decidable_rel (by_sources G).r := 
 begin 
   intros a b, 
   have : setoid.r a b = (a ≈ b), by refl,
@@ -246,20 +315,71 @@ end
 #check by_sources 
 #check finset.sum_partition (by_sources G) 
 
-lemma darts_fintype {hfin : fintype G.V} : fintype (darts G) :=
+def nhbd_darts (v : G.V) : G.nhbd v → { d | source d = v} :=
+λ x, match x with 
+  | ⟨w, h⟩ := ⟨ ⟨(v, w), by {simp at h, simpa} ⟩ , by {simp}⟩
+  end
+
+
+lemma nhbd_darts_bijection (v : G.V) : function.bijective (nhbd_darts G v) :=
 begin
-  fsplit,
+  split,
+  {
+    intros w x h,
+    cases x, cases w, dsimp at *, simp at *, injections_and_clear, simp at *, assumption,
+  },
+  {
+    rintros ⟨ ⟨ ⟨src,dst⟩, h₁ ⟩ ,h₂⟩,
+    simp at h₂,
+    subst h₂,
+    use [dst],
+    {
+      simp,
+      rwa darts_mem _ src dst at h₁,
+    },
+    refl,
+  },
+end
+
+instance (v : G.V) [hfin : fintype (G.nhbd v)] : fintype { d | source d = v} :=
+fintype.of_bijective (nhbd_darts G v) (nhbd_darts_bijection G v)
+
+--lemma darts_fintype {hfin : fintype G.V} : fintype (darts G) :=
+--let l = [(v₁, v₂) , v₁ <- hfin.1, v₂ <- G.V, G.adj v₁ v₂] in fintype.of_list l _
+
+lemma degree_eq_darts_from (v : G.V) {hfin : fintype (G.nhbd v)} : 
+  G.degree v = { d | source d = v}.to_finset.card :=
+begin 
+  dsimp,
+  simp,
+  apply fintype.card_congr (equiv.of_bijective (nhbd_darts G v) (nhbd_darts_bijection G v))
+end 
+
+lemma sum_degrees_darts [decidable_eq G.V] : 
+  hfin.1.sum (λ v, G.degree v) = fintype.card (darts G) :=
+begin 
+  obtain H1 := @finset.card_eq_sum_card_fiberwise _ _ _ (@source G) ⊤ hfin.1 
+  (by { intros x h, exact finset.mem_univ (source x)}),
+  simp at H1,
+  have Hdar : (λ x, (finset.filter (λ (x_1 : (darts G)), source x_1 = x) finset.univ).card) =
+    λ x, G.degree x,
+  {
+    ext x,
+    apply symm,
+    convert degree_eq_darts_from G x,
+    ext d,
+    simp,
+  },
+  rw <-Hdar,
+  apply symm,
+  convert H1
+end 
+
+lemma sum_degrees_even [decidable_eq G.V] : hfin.1.sum (λ v, G.degree v) % 2 = 0 :=
+begin 
+  rw sum_degrees_darts G,
   
-end 
-
-
-lemma sum_degrees_darts : hfin.1.sum (λ v, G.degree v) = (darts G).to_finset.card :=
-begin 
-  tidy,
-  sorry,
-end 
-lemma sum_degrees_even : hfin.1.sum (λ v, G.degree v) % 2 = 0 :=
-begin 
+  apply finset.sum_involution,
   tidy,
   sorry,
 end 

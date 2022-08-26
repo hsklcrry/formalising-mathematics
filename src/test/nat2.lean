@@ -24,9 +24,9 @@ begin
   rw is_prime,
   split,
   {exact one_lt_two},
-  by_contra,
-  rcases h with ⟨n, ⟨h₁, h₂, h₃⟩ ⟩ ,
-  linarith,
+  {by_contra,
+  rcases h with ⟨n, ⟨h₁, h₂, h₃⟩ ⟩,
+  linarith}
 end 
 
 theorem multiples_are_not_prime (p : nat) {h : p > 1} 
@@ -239,26 +239,8 @@ end
 --   linarith,
 -- end 
 
-
--- variables a b : Type*
--- variables f : a → b
--- variables x : a
--- variables y : b
--- example {f : a → b} : (∀ (y : b), ∃ (x : a), f(x) = y) → (∃ g : b → a, ∀ (y : b), f (g (y)) = y) :=
--- begin 
---   introv h₁,
---   split,
---   all_goals 
---   { 
---     assume y, 
---     have ex : ∃ (x : a), f x = y, from h₁ y,
---     cases ex,
---   },
---   sorry
--- end
-
-
-
+-- Furstenberg's proof ?
+-- https://en.wikipedia.org/wiki/Furstenberg%27s_proof_of_the_infinitude_of_primes
 
 
 
