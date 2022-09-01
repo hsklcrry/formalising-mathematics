@@ -3,9 +3,11 @@ import tactic
 
 namespace modular
 
-variables {n : nat} [npos : n > 1]
+variables {n : nat} {npos : fact (n > 1)}
+include n npos 
 
-def add' {n} {npos : n > 1} : {k : ℕ // k < n} → {k : ℕ // k < n} → {k : ℕ // k < n} :=
+
+def add' : {k : ℕ // k < n} → {k : ℕ // k < n} → {k : ℕ // k < n} :=
 λ a b, match (a,b) with
     | ⟨⟨a₁, ha⟩, ⟨b₁, hb⟩ ⟩ := 
       ⟨ 
@@ -17,9 +19,48 @@ def add' {n} {npos : n > 1} : {k : ℕ // k < n} → {k : ℕ // k < n} → {k :
       ⟩
     end
 
---localized "infixl ` + `:75 := add'" in modular
+def neg' : {k : ℕ // k < n} → {k : ℕ // k < n} :=
+ λ a, match a with 
+    | ⟨0, hk⟩ := ⟨0, hk⟩
+    | ⟨k + 1, hk⟩ := ⟨n - k - 1, 
+      begin 
+        show n - (k + 1) < n,
+        apply (nat.sub_lt_left_iff_lt_add (by {exact le_of_lt hk} : (k+ 1) ≤ n)).2,
+        simp only [nat.succ_pos', lt_add_iff_pos_left],
+      end⟩
+      end
 
-#reduce (⟨3, by {linarith,}⟩ : {k : ℕ // k < 5}) + (⟨3, by {linarith,}⟩ : {k : ℕ // k < 5})
+@[simp]
+lemma neg_prop : ∀ a ha, (@neg' n npos ⟨a,ha⟩).1 % n = (n - a) % n :=
+begin
+  intros,
+  simp,
+  induction a,
+  {
+    have h : neg' ⟨0, ha⟩ = ⟨0, ha⟩, by refl,
+    rw h,
+    simp,
+  },
+  {
+    have h : ↑ (neg' ⟨a_n + 1, ha⟩ ) = n - a_n - 1, by {simp,refl},
+    rw h,
+    refl,
+  }
+end 
+
+@[simp]
+lemma neg_val : ∀ h, (@neg' n npos ⟨0, h⟩).val = 0 := 
+begin 
+  intro h,
+  refl,
+end
+
+@[simp]
+lemma neg_val' : ∀ a h, (@neg' n npos ⟨a + 1, h⟩).val = n - a - 1 := 
+begin 
+  intros a h,
+  refl,
+end
 
 @[simp]
 lemma add_def': ∀ a {ha} b {hb}, ↑(@add' n npos ⟨a, ha⟩ ⟨b, hb⟩) = (a + b) % n :=
@@ -39,21 +80,7 @@ end
 instance : has_add {k : ℕ // k < n} :=
 { add := @add' n npos }
 
---lemma add_def : ∀ (a b : {k : ℕ // k < n}), a + b = @add' n npos a b :=
-
-lemma mono_coe : ∀ (a b : nat), a ≤ b ↔ (a : ℤ) ≤ b :=
-begin 
-  intros a b,
-  split,
-  {
-    intro h,
-    linarith,
-  },
-  {
-    intro h,
-    linarith,
-  }
-end 
+--lemma add_def : ∀ (a b : {k : ℕ // k < n}), a + b = @add' n npos a b := 
 
 def modN [npos : n > 1] : comm_ring {k : ℕ // k < n} :=
 { add := @add' n npos,
@@ -64,7 +91,7 @@ def modN [npos : n > 1] : comm_ring {k : ℕ // k < n} :=
       simp,
       ring,
     end,
-  zero := ⟨0, by exact nat.lt_of_succ_lt npos⟩,
+  zero := ⟨0, by {linarith}⟩,
   zero_add := 
     begin 
       rintro ⟨a, ha⟩,
@@ -81,54 +108,49 @@ def modN [npos : n > 1] : comm_ring {k : ℕ // k < n} :=
       simp,
       exact nat.mod_eq_of_lt ha,
     end,
-  neg := λ a, match a with 
-    | ⟨0, hk⟩ := ⟨0, hk⟩
-    | ⟨k + 1, hk⟩ := ⟨n - k - 1, 
-      begin 
-        --induction k,
-        have H1 : (n : ℤ) - k - 1 < (n : ℤ),
+  neg := @neg' n npos,
+  --sub := _,
+  --sub_eq_add_neg := _,
+  add_left_neg :=  
+    begin 
+      rintro ⟨ a, ha⟩ ,
+      ext,
+      unfold has_neg.neg,
+      unfold has_add.add,
+      simp,
+      set na := @neg' n npos ⟨a,ha⟩ with hna,
+      refine (@add_def'' n npos na ⟨a,ha⟩).trans _,
+      rw hna,
+      induction a,
+      {simp, refl,},
+      {
+        simp,
+        have h : a_n.succ = a_n + 1 , by refl,
+        rw h at *,
+        have h1 : n - (a_n + 1) + (a_n + 1) = n,
         {
-          linarith,
+          refine (nat.sub_add_eq_max n (a_n + 1)).trans _,
+          apply max_eq_left,
+          exact le_of_lt ha,
         },
-        have H2 : 0 < (n : ℤ) - k - 1,
+        have h2 : n - a_n - 1 + (a_n + 1) = n - (a_n + 1) + (a_n + 1),
         {
-          linarith,
+          simp,
+          exact nat.sub_sub n a_n 1,
         },
-        by_contra,
-        push_neg at h,
-        have : n + k + 1 ≤ n,
-        {
-          obtain H' := nat.add_le_add_right h (k + 1),
-          conv_rhs at H' {},
-          simp at H5,
-        }
-        have H3 : (n : ℤ) ≤ n - k - 1,
-        {
-          rw mono_coe at h,
-          apply h,
-        },
-        have : ↑n < ↑n,
-        {
-          calc ↑n ≤ ↑n - ↑k - 1 : by {linarith}
-          ... < ↑n : by {refine H1},
-        },
-        have H : n < n + k + 1,
-        {calc n ≤ n + k : by {exact nat.le.intro rfl}
-          ... < n + k + 1 : by {exact lt_add_one (n + k)}},
-        have H1 : n - k > 1,
-        {sorry,},
-        rw nat.sub_sub,
-        rw lt_iff_le_not_le at hk,
-        rw <-nat.lt_succ_of_le at hk,
-        apply sub_le_sub_right_iff,
-        calc n - k - 1 < n - k : by {}
-          ... = n : by {library_search},
-      end⟩
-      end,
-  sub := _,
-  sub_eq_add_neg := _,
-  add_left_neg := _,
-  add_comm := _,
+        rw [h2,h1],
+        simp,
+        refl,
+      }
+    end,
+  add_comm := 
+    begin 
+      rintros ⟨a,ha⟩ ⟨b,hb⟩,
+      ext,
+      change ↑(@add' n npos ⟨a,ha⟩ ⟨b,hb⟩) = ↑(@add' n npos ⟨b,hb⟩ ⟨a,ha⟩),
+      simp,
+      rw add_comm,
+    end,
   mul := _,
   mul_assoc := _,
   one := _,
