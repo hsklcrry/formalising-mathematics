@@ -154,8 +154,7 @@ begin
         assumption,
       },
       set s_coe : finset {k : ℕ // k < m.succ} := finset.map h hm.1,
-      set s1 := (insert m' s_coe),
-      use s1,
+      use (insert m' s_coe),
     },
     intros x,
     simp,
@@ -177,7 +176,7 @@ begin
       },
       {
         push_neg at H,
-        rw Hm at *,
+        rw Hm at h,
         simp at h,
         obtain h1 := nat.eq_or_lt_of_le H, 
         obtain h2 := nat.lt_add_one_iff.1 x_property,
@@ -372,16 +371,25 @@ theorem sdf : one + one + one + one + one = (0 : zmod 5 _) := by {refl}
 #print instN 
 
 
-example : a*a*a*a*a = a :=
+example : ∀ a : zmod 5 (by {simp,}), a*a*a*a*a = a :=
 begin 
   --induction a with b prop,
   --set asdf := 
   --obtain := instN 5,
+  intro a,
   haveI H : fintype {k : ℕ // k < 5} := @instN 5 (by simp) 5,
-  haveI h : fintype (zmod 5 (by {simp,})) := zmod.fintype,
-  
+  haveI h : fintype (zmod 5 (by {simp,})) := @zmod.fintype _ _ H,
+  set A := h.elems with hA,
+  set Ac := h.complete with hAc,
+  set B := H.elems with hB,
+  set Bc := H.complete with hBc,
+  obtain H1 := Ac a,
+  obtain H2 := Bc a,
+  --unfreezingI
   {
-    fin_cases a,
+    fin_cases *, -- with [0,1,2,3,4],
   },
   assumption,
 end 
+
+

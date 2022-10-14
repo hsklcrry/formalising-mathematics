@@ -242,7 +242,36 @@ end
 -- Furstenberg's proof ?
 -- https://en.wikipedia.org/wiki/Furstenberg%27s_proof_of_the_infinitude_of_primes
 
+mutual inductive prime, composite --(n : nat) 
+with prime : ℕ → Prop
+| prime₁ : Π (n : ℕ), (n ∈ primes) → prime n 
+with composite : ℕ → Prop
+| prodprimes : Π (a b : nat), prime a → prime b → composite (a * b)
+| product : Π (a b : nat), composite a → composite b → composite (a * b)
 
+example : composite 15 :=
+begin 
+  refine composite.prodprimes 3 5 _ _,
+  sorry,
+  sorry,
+end
+
+example (n : ℕ) : prime n ↔ is_prime n := 
+begin 
+  split,
+  {
+    intro h,
+    cases h,
+    assumption,
+  },
+  {
+    intro h,
+    exact prime.prime₁ n h,
+  }
+end
+
+--mutual inductive A, B 
+--with A : ℕ → Prop 
 
 
 
